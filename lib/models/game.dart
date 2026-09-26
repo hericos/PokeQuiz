@@ -18,6 +18,11 @@ enum GameId {
     'Quatro Pokémon, um critério: toque no que não combina com os outros. Quantos acertos seguidos você consegue?',
     Icons.grid_view_rounded,
   ),
+  statDuel(
+    'Quem tem mais?',
+    'Dois Pokémon lado a lado: toque no que tem mais HP, Ataque, Velocidade... Quantos acertos seguidos você consegue?',
+    Icons.bar_chart_rounded,
+  ),
 
   /// Modo infinito do "Quem é esse Pokémon?". Não aparece como card próprio:
   /// é escolhido dentro do card do whosThat, mas tem ranking separado.

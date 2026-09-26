@@ -43,6 +43,11 @@ Os dados vêm de `assets/data/pokedex.json`, gerado a partir dos CSVs da PokeAPI
 A cor shiny foi calculada a partir da arte oficial shiny; Pokémon com cores muito
 misturadas ficam fora das perguntas de cor.
 
+**Quem tem mais?** — dois Pokémon lado a lado e um status sorteado (HP, Ataque,
+Defesa, Ataque Especial, Defesa Especial, Velocidade ou Total). Toque no que tem o
+valor maior; acertou, vem outro par. A pontuação é a sequência de acertos até o
+primeiro erro. Os status base também vêm da PokeAPI (`assets/data/pokedex.json`).
+
 ### Ranking
 
 **Global**, no Firestore. Ao fim de cada partida aparece sua posição. Há ranking por
@@ -76,6 +81,7 @@ lib/
     quiz_engine.dart          # sorteio do "Quem é esse Pokémon?" e normalização
     hangman_engine.dart       # regras da Forca
     odd_one_out_engine.dart   # rodadas do "Qual é o diferente?"
+    stat_duel_engine.dart     # pares do "Quem tem mais?"
   screens/                    # login, abas, jogos, resultado, ranking, perfil
   widgets/                    # fundo de pokébolas, PokemonImage, forca do Banette
 test/                         # testes unitários

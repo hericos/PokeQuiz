@@ -8,6 +8,7 @@ import '../services/score_service.dart';
 import '../widgets/user_avatar.dart';
 import 'hangman_screen.dart';
 import 'odd_one_out_screen.dart';
+import 'stat_duel_screen.dart';
 import 'whos_that_screen.dart';
 
 /// Tela de cada jogo do catálogo.
@@ -15,6 +16,7 @@ Widget buildGameScreen(GameId game) => switch (game) {
   GameId.whosThat => const WhosThatScreen(),
   GameId.hangman => const HangmanScreen(),
   GameId.oddOneOut => const OddOneOutScreen(),
+  GameId.statDuel => const StatDuelScreen(),
   GameId.whosThatEndless => const WhosThatScreen(endlessLevel: QuizLevel.full),
 };
 

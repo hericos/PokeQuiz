@@ -14,7 +14,11 @@ class PokemonTraits {
     required this.shinyColor,
     required this.abilities,
     required this.moves,
+    required this.stats,
   });
+
+  /// Status base: HP, Ataque, Defesa, Ataque Esp., Defesa Esp., Velocidade.
+  final List<int> stats;
 
   /// Tipos em inglês ("fire", "flying").
   final List<String> types;
@@ -69,6 +73,7 @@ class Dex {
           shinyColor: p[5] as String?,
           abilities: {for (final i in p[6] as List) abilities[i as int]},
           moves: {for (final i in p[7] as List) moves[i as int]},
+          stats: (p[8] as List).cast<int>(),
         ),
     ];
     return Dex._(traits, moves, abilities);
