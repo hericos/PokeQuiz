@@ -26,8 +26,9 @@ class AuthService extends ChangeNotifier {
 
   /// Client ID "Web" do Google Cloud, exigido pelo Android (Credential Manager).
   /// Informe com: --dart-define=GOOGLE_SERVER_CLIENT_ID=xxxx.apps.googleusercontent.com
-  static const _serverClientId =
-      String.fromEnvironment('GOOGLE_SERVER_CLIENT_ID');
+  static const _serverClientId = String.fromEnvironment(
+    'GOOGLE_SERVER_CLIENT_ID',
+  );
 
   final DatabaseService _db;
   final SharedPreferences _prefs;
@@ -73,7 +74,8 @@ class AuthService extends ChangeNotifier {
     }
     if (row['provider'] == AuthProvider.google.name) {
       throw const AuthException(
-          'Essa conta foi criada com o Google. Use "Entrar com Google".');
+        'Essa conta foi criada com o Google. Use "Entrar com Google".',
+      );
     }
     final expected = row['password_hash'] as String;
     if (hashPassword(password, row['salt'] as String) != expected) {
@@ -103,7 +105,9 @@ class AuthService extends ChangeNotifier {
       if (e.code == GoogleSignInExceptionCode.canceled) {
         throw const AuthException('Login com Google cancelado.');
       }
-      throw AuthException('Falha no login com Google: ${e.description ?? e.code.name}');
+      throw AuthException(
+        'Falha no login com Google: ${e.description ?? e.code.name}',
+      );
     }
 
     final existing = await _db.findUserRowByEmail(account.email);

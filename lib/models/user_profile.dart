@@ -30,28 +30,28 @@ class UserProfile {
   bool get photoIsRemote => photo != null && photo!.startsWith('http');
 
   factory UserProfile.fromMap(Map<String, Object?> map) => UserProfile(
-        id: map['id'] as int,
-        email: map['email'] as String,
-        provider: AuthProvider.values.byName(map['provider'] as String),
-        name: map['name'] as String,
-        age: map['age'] as int?,
-        city: map['city'] as String?,
-        country: map['country'] as String?,
-        favoritePokemon: map['favorite_pokemon'] as String?,
-        bio: map['bio'] as String?,
-        photo: map['photo'] as String?,
-      );
+    id: map['id'] as int,
+    email: map['email'] as String,
+    provider: AuthProvider.values.byName(map['provider'] as String),
+    name: map['name'] as String,
+    age: map['age'] as int?,
+    city: map['city'] as String?,
+    country: map['country'] as String?,
+    favoritePokemon: map['favorite_pokemon'] as String?,
+    bio: map['bio'] as String?,
+    photo: map['photo'] as String?,
+  );
 
   /// Somente os campos editáveis pelo usuário.
   Map<String, Object?> toProfileMap() => {
-        'name': name,
-        'age': age,
-        'city': city,
-        'country': country,
-        'favorite_pokemon': favoritePokemon,
-        'bio': bio,
-        'photo': photo,
-      };
+    'name': name,
+    'age': age,
+    'city': city,
+    'country': country,
+    'favorite_pokemon': favoritePokemon,
+    'bio': bio,
+    'photo': photo,
+  };
 
   UserProfile copyWith({
     String? name,
@@ -61,18 +61,18 @@ class UserProfile {
     String? Function()? favoritePokemon,
     String? Function()? bio,
     String? Function()? photo,
-  }) =>
-      UserProfile(
-        id: id,
-        email: email,
-        provider: provider,
-        name: name ?? this.name,
-        age: age != null ? age() : this.age,
-        city: city != null ? city() : this.city,
-        country: country != null ? country() : this.country,
-        favoritePokemon:
-            favoritePokemon != null ? favoritePokemon() : this.favoritePokemon,
-        bio: bio != null ? bio() : this.bio,
-        photo: photo != null ? photo() : this.photo,
-      );
+  }) => UserProfile(
+    id: id,
+    email: email,
+    provider: provider,
+    name: name ?? this.name,
+    age: age != null ? age() : this.age,
+    city: city != null ? city() : this.city,
+    country: country != null ? country() : this.country,
+    favoritePokemon: favoritePokemon != null
+        ? favoritePokemon()
+        : this.favoritePokemon,
+    bio: bio != null ? bio() : this.bio,
+    photo: photo != null ? photo() : this.photo,
+  );
 }

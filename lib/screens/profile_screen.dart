@@ -1,9 +1,4 @@
-import 'dart:io';
-
 import 'package:flutter/material.dart';
-import 'package:image_picker/image_picker.dart';
-import 'package:path/path.dart' as p;
-import 'package:path_provider/path_provider.dart';
 import 'package:provider/provider.dart';
 
 import '../models/pokemon.dart';
@@ -11,208 +6,103 @@ import '../models/user_profile.dart';
 import '../services/auth_service.dart';
 import '../widgets/pokemon_image.dart';
 import '../widgets/user_avatar.dart';
+import 'profile_edit_screen.dart';
 
-class ProfileScreen extends StatefulWidget {
+/// Aba "Perfil": mostra os dados do treinador.
+class ProfileScreen extends StatelessWidget {
   const ProfileScreen({super.key});
 
   @override
-  State<ProfileScreen> createState() => _ProfileScreenState();
-}
-
-class _ProfileScreenState extends State<ProfileScreen> {
-  final _formKey = GlobalKey<FormState>();
-  late final UserProfile _original;
-  late final TextEditingController _name, _age, _city, _country, _bio;
-  String? _photo;
-  String? _favorite;
-  bool _saving = false;
-
-  static const bioMaxLength = 200;
-
-  @override
-  void initState() {
-    super.initState();
-    _original = context.read<AuthService>().currentUser!;
-    _name = TextEditingController(text: _original.name);
-    _age = TextEditingController(text: _original.age?.toString() ?? '');
-    _city = TextEditingController(text: _original.city ?? '');
-    _country = TextEditingController(text: _original.country ?? '');
-    _bio = TextEditingController(text: _original.bio ?? '');
-    _photo = _original.photo;
-    _favorite = _original.favoritePokemon;
-  }
-
-  @override
-  void dispose() {
-    for (final c in [_name, _age, _city, _country, _bio]) {
-      c.dispose();
-    }
-    super.dispose();
-  }
-
-  Future<void> _pickPhoto(ImageSource source) async {
-    Navigator.of(context).pop();
-    final picked = await ImagePicker().pickImage(
-        source: source, maxWidth: 512, maxHeight: 512, imageQuality: 85);
-    if (picked == null) return;
-    // Copia para a pasta do app para a foto não sumir se o cache for limpo.
-    final dir = await getApplicationDocumentsDirectory();
-    final dest = p.join(dir.path,
-        'avatar_${_original.id}_${DateTime.now().millisecondsSinceEpoch}${p.extension(picked.path)}');
-    await File(picked.path).copy(dest);
-    setState(() => _photo = dest);
-  }
-
-  void _showPhotoOptions() {
-    showModalBottomSheet<void>(
-      context: context,
-      builder: (ctx) => SafeArea(
-        child: Wrap(children: [
-          ListTile(
-            leading: const Icon(Icons.photo_library),
-            title: const Text('Escolher da galeria'),
-            onTap: () => _pickPhoto(ImageSource.gallery),
-          ),
-          ListTile(
-            leading: const Icon(Icons.photo_camera),
-            title: const Text('Tirar foto'),
-            onTap: () => _pickPhoto(ImageSource.camera),
-          ),
-          if (_photo != null)
-            ListTile(
-              leading: const Icon(Icons.delete),
-              title: const Text('Remover foto'),
-              onTap: () {
-                Navigator.of(ctx).pop();
-                setState(() => _photo = null);
-              },
-            ),
-        ]),
-      ),
-    );
-  }
-
-  String? _nullIfEmpty(String s) => s.trim().isEmpty ? null : s.trim();
-
-  Future<void> _save() async {
-    if (!_formKey.currentState!.validate()) return;
-    setState(() => _saving = true);
-    final updated = _original.copyWith(
-      name: _name.text.trim(),
-      age: () => int.tryParse(_age.text.trim()),
-      city: () => _nullIfEmpty(_city.text),
-      country: () => _nullIfEmpty(_country.text),
-      bio: () => _nullIfEmpty(_bio.text),
-      favoritePokemon: () => _favorite,
-      photo: () => _photo,
-    );
-    await context.read<AuthService>().updateProfile(updated);
-    if (!mounted) return;
-    ScaffoldMessenger.of(context)
-        .showSnackBar(const SnackBar(content: Text('Perfil atualizado!')));
-    Navigator.of(context).pop();
-  }
-
-  @override
   Widget build(BuildContext context) {
-    final favorite = Pokemon.byName(_favorite);
-    return Scaffold(
-      appBar: AppBar(title: const Text('Meu perfil')),
-      body: SafeArea(
-        child: Form(
-          key: _formKey,
-          child: ListView(
-            padding: const EdgeInsets.all(16),
-            children: [
-              Center(
-                child: Stack(
+    final auth = context.watch<AuthService>();
+    final user = auth.currentUser!;
+    final favorite = Pokemon.byName(user.favoritePokemon);
+    final textTheme = Theme.of(context).textTheme;
+    final place = [user.city, user.country].whereType<String>().join(', ');
+
+    return ListView(
+      padding: const EdgeInsets.all(16),
+      children: [
+        Card(
+          child: Padding(
+            padding: const EdgeInsets.all(20),
+            child: Column(
+              children: [
+                UserAvatar(name: user.name, photo: user.photo, radius: 56),
+                const SizedBox(height: 12),
+                Text(
+                  user.name,
+                  style: textTheme.headlineSmall?.copyWith(
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                Text(user.email, style: textTheme.bodySmall),
+                const SizedBox(height: 12),
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  alignment: WrapAlignment.center,
                   children: [
-                    UserAvatar(name: _name.text, photo: _photo, radius: 56),
-                    Positioned(
-                      right: 0,
-                      bottom: 0,
-                      child: IconButton.filled(
-                        icon: const Icon(Icons.camera_alt),
-                        onPressed: _showPhotoOptions,
+                    if (user.age != null)
+                      Chip(
+                        avatar: const Icon(Icons.cake, size: 18),
+                        label: Text('${user.age} anos'),
+                      ),
+                    if (place.isNotEmpty)
+                      Chip(
+                        avatar: const Icon(Icons.place, size: 18),
+                        label: Text(place),
+                      ),
+                    Chip(
+                      avatar: Icon(
+                        user.provider == AuthProvider.google
+                            ? Icons.g_mobiledata
+                            : Icons.lock,
+                        size: 18,
+                      ),
+                      label: Text(
+                        user.provider == AuthProvider.google
+                            ? 'Conta Google'
+                            : 'Conta local',
                       ),
                     ),
                   ],
                 ),
-              ),
-              const SizedBox(height: 8),
-              Center(child: Text(_original.email)),
-              const SizedBox(height: 24),
-              TextFormField(
-                controller: _name,
-                textCapitalization: TextCapitalization.words,
-                decoration: const InputDecoration(labelText: 'Nome'),
-                validator: (v) =>
-                    (v == null || v.trim().length < 2) ? 'Informe seu nome' : null,
-                onChanged: (_) => setState(() {}),
-              ),
-              const SizedBox(height: 16),
-              TextFormField(
-                controller: _age,
-                keyboardType: TextInputType.number,
-                decoration: const InputDecoration(labelText: 'Idade'),
-                validator: (v) {
-                  if (v == null || v.trim().isEmpty) return null;
-                  final n = int.tryParse(v.trim());
-                  return (n == null || n < 1 || n > 120) ? 'Idade inválida' : null;
-                },
-              ),
-              const SizedBox(height: 16),
-              TextFormField(
-                controller: _city,
-                textCapitalization: TextCapitalization.words,
-                decoration: const InputDecoration(labelText: 'Cidade'),
-              ),
-              const SizedBox(height: 16),
-              TextFormField(
-                controller: _country,
-                textCapitalization: TextCapitalization.words,
-                decoration: const InputDecoration(labelText: 'País'),
-              ),
-              const SizedBox(height: 16),
-              DropdownButtonFormField<String>(
-                initialValue: _favorite,
-                isExpanded: true,
-                decoration: const InputDecoration(labelText: 'Pokémon preferido'),
-                items: [
-                  for (final pkm in Pokemon.kanto)
-                    DropdownMenuItem(
-                      value: pkm.name,
-                      child: Text('${pkm.dexNumber}  ${pkm.name}'),
-                    ),
+                if (user.bio != null) ...[
+                  const SizedBox(height: 12),
+                  Text(user.bio!, textAlign: TextAlign.center),
                 ],
-                onChanged: (v) => setState(() => _favorite = v),
-              ),
-              if (favorite != null)
-                Padding(
-                  padding: const EdgeInsets.only(top: 8),
-                  child: Center(child: PokemonImage(pokemon: favorite, size: 140)),
-                ),
-              const SizedBox(height: 16),
-              TextFormField(
-                controller: _bio,
-                maxLines: 4,
-                maxLength: bioMaxLength,
-                textCapitalization: TextCapitalization.sentences,
-                decoration: const InputDecoration(
-                  labelText: 'Bio',
-                  hintText: 'Conte um pouco sobre você como treinador...',
-                  alignLabelWithHint: true,
-                ),
-              ),
-              const SizedBox(height: 16),
-              FilledButton(
-                onPressed: _saving ? null : _save,
-                child: const Text('Salvar'),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
-      ),
+        if (favorite != null)
+          Card(
+            child: ListTile(
+              contentPadding: const EdgeInsets.all(12),
+              leading: PokemonImage(pokemon: favorite, size: 64),
+              title: const Text('Pokémon preferido'),
+              subtitle: Text(
+                '${favorite.name} ${favorite.dexNumber}',
+                style: textTheme.titleMedium,
+              ),
+            ),
+          ),
+        const SizedBox(height: 12),
+        FilledButton.icon(
+          icon: const Icon(Icons.edit),
+          label: const Text('Editar perfil'),
+          onPressed: () => Navigator.of(
+            context,
+          ).push(MaterialPageRoute(builder: (_) => const ProfileEditScreen())),
+        ),
+        const SizedBox(height: 12),
+        OutlinedButton.icon(
+          icon: const Icon(Icons.logout),
+          label: const Text('Sair'),
+          onPressed: auth.logout,
+        ),
+      ],
     );
   }
 }

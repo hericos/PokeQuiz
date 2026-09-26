@@ -1,3 +1,5 @@
+import 'dart:math';
+
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 
@@ -5,7 +7,7 @@ import '../models/pokemon.dart';
 
 enum PokemonImageMode { full, partial, shadow }
 
-/// Exibe a arte do Pokémon inteira, recortada (25% da área) ou como sombra.
+/// Exibe a arte do Pokémon inteira, recortada (15% da área) ou como sombra.
 class PokemonImage extends StatelessWidget {
   const PokemonImage({
     super.key,
@@ -21,6 +23,9 @@ class PokemonImage extends StatelessWidget {
   final double cropX;
   final double cropY;
   final double size;
+
+  /// Lado da janela de recorte: sqrt(0.15) ≈ 0.387 → 15% da área.
+  static final cropFactor = sqrt(0.15);
 
   /// Zera RGB e mantém o alpha: vira uma silhueta preta.
   static const _shadowMatrix = <double>[
@@ -58,8 +63,8 @@ class PokemonImage extends StatelessWidget {
           child: image,
         );
       case PokemonImageMode.partial:
-        // Janela com metade da largura e metade da altura = 25% da imagem,
-        // ampliada para ocupar o mesmo espaço.
+        // Janela quadrada com 15% da área da imagem, ampliada para ocupar o
+        // mesmo espaço.
         return SizedBox(
           width: size,
           height: size,
@@ -68,8 +73,8 @@ class PokemonImage extends StatelessWidget {
             child: ClipRect(
               child: Align(
                 alignment: Alignment(cropX, cropY),
-                widthFactor: 0.5,
-                heightFactor: 0.5,
+                widthFactor: cropFactor,
+                heightFactor: cropFactor,
                 child: image,
               ),
             ),

@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-import 'screens/home_screen.dart';
+import 'screens/home_shell.dart';
 import 'screens/login_screen.dart';
 import 'services/auth_service.dart';
 import 'services/database_service.dart';
@@ -10,6 +11,7 @@ import 'theme.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  SystemChrome.setSystemUIOverlayStyle(SystemUiOverlayStyle.light);
   final db = await DatabaseService.open();
   final prefs = await SharedPreferences.getInstance();
   final auth = AuthService(db, prefs);
@@ -34,11 +36,10 @@ class PokeQuizApp extends StatelessWidget {
     return MaterialApp(
       title: 'PokeQuiz',
       debugShowCheckedModeBanner: false,
-      theme: buildTheme(Brightness.light),
-      darkTheme: buildTheme(Brightness.dark),
+      theme: buildTheme(),
       home: Consumer<AuthService>(
         builder: (context, auth, _) =>
-            auth.isLoggedIn ? const HomeScreen() : const LoginScreen(),
+            auth.isLoggedIn ? const HomeShell() : const LoginScreen(),
       ),
     );
   }

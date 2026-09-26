@@ -6,75 +6,95 @@ import 'package:pokequiz/models/quiz.dart';
 import 'package:pokequiz/services/quiz_engine.dart';
 
 void main() {
-  test('Kanto tem 151 Pokémon com ids de 1 a 151', () {
-    expect(Pokemon.kanto, hasLength(151));
-    expect(Pokemon.kanto.first.name, 'Bulbasaur');
-    expect(Pokemon.kanto.last.id, 151);
-    expect(Pokemon.kanto[24].name, 'Pikachu');
+  test('Pokédex nacional completa, #1 a #1025', () {
+    expect(Pokemon.all, hasLength(1025));
+    expect(Pokemon.all.first.name, 'Bulbasaur');
+    expect(Pokemon.all[24].name, 'Pikachu');
+    expect(Pokemon.all.last.name, 'Pecharunt');
+    expect(Pokemon.all.map((p) => p.name).toSet(), hasLength(1025));
   });
 
-  group('buildRound', () {
-    final engine = QuizEngine(random: Random(42));
+  test('regiões cobrem todos os números', () {
+    expect(Pokemon.byName('Mew')!.region, Region.kanto);
+    expect(Pokemon.byName('Chikorita')!.region, Region.johto);
+    expect(Pokemon.byName('Sprigatito')!.region, Region.paldea);
+    for (final p in Pokemon.all) {
+      expect(() => p.region, returnsNormally);
+    }
+  });
 
-    for (final level in QuizLevel.values) {
-      test('${level.label}: 10 Pokémon distintos e alternativas válidas', () {
-        final round = engine.buildRound(level);
-        expect(round, hasLength(10));
-        expect(round.map((q) => q.answer).toSet(), hasLength(10));
-        for (final q in round) {
-          if (level.isTyped) {
-            expect(q.options, isEmpty);
-          } else {
-            expect(q.options, hasLength(level.optionCount));
-            expect(q.options.toSet(), hasLength(level.optionCount));
-            expect(q.options, contains(q.answer));
-          }
-          expect(q.cropX, inInclusiveRange(-0.6, 0.6));
-          expect(q.cropY, inInclusiveRange(-0.6, 0.6));
-        }
-      });
+  test('partida: 40 Pokémon distintos, 10 por level, na ordem', () {
+    final game = QuizEngine(random: Random(42)).buildGame();
+    expect(game, hasLength(40));
+    expect(game.map((q) => q.answer).toSet(), hasLength(40));
+    for (var i = 0; i < game.length; i++) {
+      final q = game[i];
+      expect(q.level, QuizLevel.values[i ~/ 10]);
+      if (q.level.isTyped) {
+        expect(q.options, isEmpty);
+      } else {
+        expect(q.options, hasLength(q.level.optionCount));
+        expect(q.options.toSet(), hasLength(q.level.optionCount));
+        expect(q.options, contains(q.answer));
+      }
+      expect(q.cropX, inInclusiveRange(-0.5, 0.5));
     }
   });
 
   group('resposta digitada', () {
     Pokemon byName(String n) => Pokemon.byName(n)!;
 
-    test('ignora caixa, espaços e pontuação', () {
-      expect(QuizEngine.isCorrectTypedAnswer(byName('Pikachu'), ' pikachu '), isTrue);
-      expect(QuizEngine.isCorrectTypedAnswer(byName('Mr. Mime'), 'mr mime'), isTrue);
-      expect(QuizEngine.isCorrectTypedAnswer(byName("Farfetch'd"), 'Farfetchd'), isTrue);
+    test('ignora caixa, espaços, acentos e pontuação', () {
+      expect(
+        QuizEngine.isCorrectTypedAnswer(byName('Pikachu'), ' pikachu '),
+        isTrue,
+      );
+      expect(
+        QuizEngine.isCorrectTypedAnswer(byName('Mr. Mime'), 'mr mime'),
+        isTrue,
+      );
+      expect(
+        QuizEngine.isCorrectTypedAnswer(byName('Farfetch’d'), "Farfetch'd"),
+        isTrue,
+      );
+      expect(
+        QuizEngine.isCorrectTypedAnswer(byName('Flabébé'), 'flabebe'),
+        isTrue,
+      );
+      expect(
+        QuizEngine.isCorrectTypedAnswer(byName('Type: Null'), 'type null'),
+        isTrue,
+      );
     });
 
     test('Nidoran aceita com ou sem gênero', () {
-      expect(QuizEngine.isCorrectTypedAnswer(byName('Nidoran♀'), 'Nidoran'), isTrue);
-      expect(QuizEngine.isCorrectTypedAnswer(byName('Nidoran♂'), 'nidoran m'), isTrue);
+      expect(
+        QuizEngine.isCorrectTypedAnswer(byName('Nidoran♀'), 'Nidoran'),
+        isTrue,
+      );
+      expect(
+        QuizEngine.isCorrectTypedAnswer(byName('Nidoran♂'), 'nidoran m'),
+        isTrue,
+      );
     });
 
     test('rejeita respostas erradas ou vazias', () {
-      expect(QuizEngine.isCorrectTypedAnswer(byName('Pikachu'), 'Raichu'), isFalse);
+      expect(
+        QuizEngine.isCorrectTypedAnswer(byName('Pikachu'), 'Raichu'),
+        isFalse,
+      );
       expect(QuizEngine.isCorrectTypedAnswer(byName('Pikachu'), ''), isFalse);
     });
   });
 
-  group('pontuação', () {
-    test('zero acertos = zero pontos', () {
-      const r = QuizResult(
-          level: QuizLevel.full, correct: 0, total: 10, elapsed: Duration(seconds: 5));
-      expect(r.score, 0);
-    });
-
-    test('bônus de velocidade limitado a 50%', () {
-      const fast = QuizResult(
-          level: QuizLevel.shadowTyped, correct: 10, total: 10, elapsed: Duration(seconds: 1));
-      const slow = QuizResult(
-          level: QuizLevel.shadowTyped, correct: 10, total: 10, elapsed: Duration(minutes: 5));
-      expect(fast.score, 750);
-      expect(slow.score, 500);
-    });
+  test('pontos: bônus de velocidade limitado a +50%', () {
+    expect(QuizLevel.shadowTyped.pointsFor(const Duration(seconds: 1)), 75);
+    expect(QuizLevel.shadowTyped.pointsFor(const Duration(seconds: 30)), 50);
+    expect(QuizLevel.full.pointsFor(const Duration(seconds: 8)), 12);
   });
 
   test('título de treinador', () {
     expect(trainerTitle(0), 'Treinador Iniciante');
-    expect(trainerTitle(1650), 'Mestre Pokémon');
+    expect(trainerTitle(3000), 'Mestre Pokémon');
   });
 }

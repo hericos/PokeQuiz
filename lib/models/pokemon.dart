@@ -1,4 +1,26 @@
-import '../data/kanto_pokemon.dart';
+import '../data/pokemon_names.dart';
+
+enum Region {
+  kanto('Kanto', 1, 151),
+  johto('Johto', 152, 251),
+  hoenn('Hoenn', 252, 386),
+  sinnoh('Sinnoh', 387, 493),
+  unova('Unova', 494, 649),
+  kalos('Kalos', 650, 721),
+  alola('Alola', 722, 809),
+  galar('Galar', 810, 898),
+  hisui('Hisui', 899, 905),
+  paldea('Paldea', 906, 1025);
+
+  const Region(this.label, this.first, this.last);
+
+  final String label;
+  final int first;
+  final int last;
+
+  static Region of(int id) =>
+      values.firstWhere((r) => id >= r.first && id <= r.last);
+}
 
 class Pokemon {
   final int id;
@@ -10,16 +32,19 @@ class Pokemon {
   String get imageUrl =>
       'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/$id.png';
 
-  String get dexNumber => '#${id.toString().padLeft(3, '0')}';
+  String get dexNumber => '#${id.toString().padLeft(4, '0')}';
 
-  static final List<Pokemon> kanto = List.unmodifiable([
-    for (var i = 0; i < kantoPokemonNames.length; i++)
-      Pokemon(i + 1, kantoPokemonNames[i]),
+  Region get region => Region.of(id);
+
+  /// Todos os Pokémon de todas as regiões.
+  static final List<Pokemon> all = List.unmodifiable([
+    for (var i = 0; i < pokemonNames.length; i++)
+      Pokemon(i + 1, pokemonNames[i]),
   ]);
 
   static Pokemon? byName(String? name) {
     if (name == null) return null;
-    for (final p in kanto) {
+    for (final p in all) {
       if (p.name == name) return p;
     }
     return null;
