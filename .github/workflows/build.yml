@@ -1,4 +1,4 @@
-name: Android
+name: Build
 
 on:
   push:
@@ -54,3 +54,32 @@ jobs:
             Build ${{ env.BUILD_NUMBER }} do commit ${{ github.sha }} (branch ${{ github.ref_name }}).
             Baixe o `pokequiz.apk` abaixo e instale por cima da versão anterior.
           files: pokequiz.apk
+
+  web:
+    runs-on: ubuntu-latest
+    env:
+      # Deploy só roda depois de cadastrar o secret FIREBASE_SERVICE_ACCOUNT.
+      HAS_FIREBASE_SA: ${{ secrets.FIREBASE_SERVICE_ACCOUNT != '' }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - run: flutter pub get
+
+      - name: Build Web
+        # Embute o CanvasKit no site (não depende do CDN gstatic.com).
+        run: flutter build web --release --no-web-resources-cdn --build-name=1.0.${{ github.run_number }}
+
+      # Publica em https://pokequiz-575ea.web.app a cada push (igual ao APK).
+      - name: Deploy no Firebase Hosting
+        if: github.event_name != 'pull_request' && env.HAS_FIREBASE_SA == 'true'
+        uses: FirebaseExtended/action-hosting-deploy@v0
+        with:
+          repoToken: ${{ secrets.GITHUB_TOKEN }}
+          firebaseServiceAccount: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+          projectId: pokequiz-575ea
+          channelId: live

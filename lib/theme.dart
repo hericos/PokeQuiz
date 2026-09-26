@@ -4,6 +4,8 @@ import 'package:flutter/material.dart';
 const pokeBackground = Color(0xFFE05A70);
 const pokeBackgroundLight = Color(0xFFEB7A8D);
 const pokeBar = Color(0xFFC7405A);
+const pokeBackgroundDark = Color(0xFFB53A51);
+const pokeBackgroundDarkLight = Color(0xFFC04A60);
 const pokeRed = Color(0xFFD63A55);
 const pokeYellow = Color(0xFFFFCB05);
 const pokeBlue = Color(0xFF3B4CCA);

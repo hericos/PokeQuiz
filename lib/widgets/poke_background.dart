@@ -6,14 +6,22 @@ import '../theme.dart';
 
 /// Fundo rosado com pokébolas mais claras em padrão quadriculado.
 class PokeBackground extends StatelessWidget {
-  const PokeBackground({super.key, required this.child});
+  const PokeBackground({super.key, required this.child, this.dark = false});
 
   final Widget child;
+
+  /// Versão mais escura, usada nas laterais em telas largas (web/tablet).
+  final bool dark;
 
   @override
   Widget build(BuildContext context) {
     return CustomPaint(
-      painter: const _PokeballPatternPainter(),
+      painter: dark
+          ? const _PokeballPatternPainter(
+              pokeBackgroundDark,
+              pokeBackgroundDarkLight,
+            )
+          : const _PokeballPatternPainter(pokeBackground, pokeBackgroundLight),
       isComplex: true,
       child: child,
     );
@@ -44,18 +52,22 @@ class PokeScaffold extends StatelessWidget {
 }
 
 class _PokeballPatternPainter extends CustomPainter {
-  const _PokeballPatternPainter();
+  const _PokeballPatternPainter(this.background, this.ballColor);
+
+  final Color background;
+  final Color ballColor;
 
   static const cell = 56.0;
   static const radius = 17.0;
 
   @override
   void paint(Canvas canvas, Size size) {
-    canvas.drawRect(Offset.zero & size, Paint()..color = pokeBackground);
+    canvas.clipRect(Offset.zero & size);
+    canvas.drawRect(Offset.zero & size, Paint()..color = background);
 
-    final ball = Paint()..color = pokeBackgroundLight;
+    final ball = Paint()..color = ballColor;
     final line = Paint()
-      ..color = pokeBackground
+      ..color = background
       ..strokeWidth = 3;
 
     final cols = (size.width / cell).ceil() + 1;

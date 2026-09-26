@@ -152,6 +152,23 @@ storeFile=/caminho/para/pokequiz.jks
 
 Com `key.properties` presente, o build de release usa essa chave; sem ele, usa a de teste.
 
+## Versão web (Firebase Hosting)
+
+O mesmo código roda no navegador: https://pokequiz-575ea.web.app
+
+- Build local: `flutter build web --release --no-web-resources-cdn` (gera `build/web`).
+  O `--no-web-resources-cdn` embute o motor gráfico no site, sem depender do CDN do Google.
+- Teste local: `flutter run -d chrome`.
+- Em telas largas o app fica numa coluna de 600px centralizada.
+- Deploy: o job `web` do workflow publica no Firebase Hosting a cada push, desde que exista
+  o secret `FIREBASE_SERVICE_ACCOUNT` no GitHub. Manual: `firebase deploy --only hosting`.
+
+Para criar o secret, o jeito mais simples é `firebase init hosting:github` (cria a conta de
+serviço e o secret sozinho). Manualmente: Google Cloud Console → IAM → Contas de serviço →
+criar conta com os papéis **Firebase Hosting Admin**, **Cloud Run Viewer** e **API Keys
+Viewer** → Chaves → Adicionar chave JSON → colar o JSON em GitHub → Settings → Secrets and
+variables → Actions → `FIREBASE_SERVICE_ACCOUNT`.
+
 ## iOS (futuro)
 
 O projeto já inclui a pasta `ios/` e as permissões de câmera/galeria no `Info.plist`.

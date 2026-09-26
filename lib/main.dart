@@ -43,6 +43,7 @@ class PokeQuizApp extends StatelessWidget {
       title: 'PokeQuiz',
       debugShowCheckedModeBanner: false,
       theme: buildTheme(),
+      builder: _limitWidth,
       home: Consumer<AuthService>(
         builder: (context, auth, _) {
           if (auth.initializing) {
@@ -59,6 +60,23 @@ class PokeQuizApp extends StatelessWidget {
   }
 }
 
+/// Na web/tablet, mantém o app com largura de celular no centro da tela,
+/// com o fundo de pokébolas preenchendo as laterais.
+Widget _limitWidth(BuildContext context, Widget? child) => PokeBackground(
+  dark: true,
+  child: Center(
+    child: ConstrainedBox(
+      constraints: const BoxConstraints(maxWidth: 600),
+      child: DecoratedBox(
+        decoration: const BoxDecoration(
+          boxShadow: [BoxShadow(color: Colors.black38, blurRadius: 24)],
+        ),
+        child: child,
+      ),
+    ),
+  ),
+);
+
 /// Mostrado quando o app foi compilado sem a configuração do Firebase.
 class _FirebaseNotConfiguredApp extends StatelessWidget {
   const _FirebaseNotConfiguredApp({required this.error});
@@ -70,6 +88,7 @@ class _FirebaseNotConfiguredApp extends StatelessWidget {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
       theme: buildTheme(),
+      builder: _limitWidth,
       home: PokeScaffold(
         body: Center(
           child: Card(
