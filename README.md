@@ -20,6 +20,11 @@ Quiz de Pokémon feito em **Flutter** (Android agora, iOS no futuro).
 | 3 | Só a sombra | 4 opções | 30 |
 | 4 | Só a sombra | Digitar o nome | 50 |
 
+No **modo infinito**, você escolhe um dos 4 levels e joga sem fim, com 3 vidas
+(cada erro custa uma) e o botão **Encerrar** para parar e salvar. Tem ranking
+próprio ("Quem é esse? Infinito"), somando os pontos; levels mais difíceis valem
+mais por acerto.
+
 Respostas em menos de 5s ganham até +50%. Na resposta digitada, maiúsculas,
 acentos, espaços e pontuação são ignorados (`mr mime` = `Mr. Mime`).
 

@@ -41,6 +41,19 @@ void main() {
     }
   });
 
+  test('modo infinito: não repete Pokémon e recomeça ao esgotar', () {
+    final pool = Pokemon.all.take(5).toList();
+    final engine = QuizEngine(random: Random(1), pool: pool);
+    final first = [
+      for (var i = 0; i < 5; i++) engine.nextQuestion(QuizLevel.shadowChoice),
+    ];
+    expect(first.map((q) => q.answer).toSet(), hasLength(5));
+    expect(first.every((q) => q.level == QuizLevel.shadowChoice), isTrue);
+    expect(first.every((q) => q.options.length == 4), isTrue);
+    // Esgotou a Pokédex (aqui, 5): continua gerando.
+    expect(engine.nextQuestion(QuizLevel.shadowChoice).answer, isIn(pool));
+  });
+
   group('resposta digitada', () {
     Pokemon byName(String n) => Pokemon.byName(n)!;
 

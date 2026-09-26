@@ -15,6 +15,7 @@ Widget buildGameScreen(GameId game) => switch (game) {
   GameId.whosThat => const WhosThatScreen(),
   GameId.hangman => const HangmanScreen(),
   GameId.oddOneOut => const OddOneOutScreen(),
+  GameId.whosThatEndless => const WhosThatScreen(endlessLevel: QuizLevel.full),
 };
 
 class GamesScreen extends StatefulWidget {
@@ -39,10 +40,60 @@ class _GamesScreenState extends State<GamesScreen> {
   }
 
   Future<void> _play(GameId game) async {
-    await Navigator.of(context)
-        .push(MaterialPageRoute(builder: (_) => buildGameScreen(game)));
+    final screen = game == GameId.whosThat
+        ? await _chooseWhosThatMode()
+        : buildGameScreen(game);
+    if (screen == null || !mounted) return;
+    await Navigator.of(context).push(MaterialPageRoute(builder: (_) => screen));
     if (mounted) setState(_load);
   }
+
+  /// Campanha (4 levels seguidos) ou modo infinito num level escolhido.
+  Future<Widget?> _chooseWhosThatMode() => showModalBottomSheet<Widget>(
+    context: context,
+    isScrollControlled: true,
+    builder: (ctx) => SafeArea(
+      child: SingleChildScrollView(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            const Padding(
+              padding: EdgeInsets.fromLTRB(16, 16, 16, 4),
+              child: Text(
+                'Quem é esse Pokémon?',
+                style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+              ),
+            ),
+            ListTile(
+              leading: const Icon(Icons.flag_circle, size: 36),
+              title: const Text('Campanha'),
+              subtitle: const Text('4 levels seguidos, 10 Pokémon cada'),
+              onTap: () => Navigator.pop(ctx, const WhosThatScreen()),
+            ),
+            const Divider(),
+            const Padding(
+              padding: EdgeInsets.fromLTRB(16, 4, 16, 0),
+              child: Text(
+                'Modo infinito • 3 vidas',
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
+            ),
+            for (final level in QuizLevel.values)
+              ListTile(
+                leading: CircleAvatar(child: Text('${level.number}')),
+                title: Text(level.title),
+                subtitle: Text('${level.pointsPerHit} pts por acerto'),
+                trailing: const Icon(Icons.all_inclusive),
+                onTap: () =>
+                    Navigator.pop(ctx, WhosThatScreen(endlessLevel: level)),
+              ),
+            const SizedBox(height: 8),
+          ],
+        ),
+      ),
+    ),
+  );
 
   @override
   Widget build(BuildContext context) {
@@ -81,8 +132,17 @@ class _GamesScreenState extends State<GamesScreen> {
               ],
             ),
             const SizedBox(height: 20),
-            for (final game in GameId.values)
-              _GameCard(game: game, best: best[game], onTap: () => _play(game)),
+            for (final game in GameId.values.where((g) => g.listed))
+              _GameCard(
+                game: game,
+                best: best[game],
+                extra:
+                    game == GameId.whosThat &&
+                        best[GameId.whosThatEndless] != null
+                    ? 'Infinito: ${best[GameId.whosThatEndless]} pts'
+                    : null,
+                onTap: () => _play(game),
+              ),
             const _ComingSoonCard(),
           ],
         );
@@ -96,7 +156,11 @@ class _GameCard extends StatelessWidget {
     required this.game,
     required this.best,
     required this.onTap,
+    this.extra,
   });
+
+  /// Linha extra de recorde (ex.: modo infinito).
+  final String? extra;
 
   final GameId game;
   final int? best;
@@ -143,6 +207,14 @@ class _GameCard extends StatelessWidget {
                         fontWeight: FontWeight.w600,
                       ),
                     ),
+                    if (extra != null)
+                      Text(
+                        extra!,
+                        style: TextStyle(
+                          color: scheme.secondary,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
                   ],
                 ),
               ),

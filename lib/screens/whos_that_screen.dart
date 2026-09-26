@@ -9,10 +9,13 @@ import '../widgets/poke_background.dart';
 import '../widgets/pokemon_image.dart';
 import 'game_result_screen.dart';
 
-/// "Quem é esse Pokémon?": 4 levels seguidos, 10 Pokémon cada. Respondeu 10,
-/// sobe de level.
+/// "Quem é esse Pokémon?".
+/// - Campanha: 4 levels seguidos, 10 Pokémon cada. Respondeu 10, sobe de level.
+/// - Infinito ([endlessLevel]): um level só, Pokémon sem fim, 3 vidas.
 class WhosThatScreen extends StatefulWidget {
-  const WhosThatScreen({super.key});
+  const WhosThatScreen({super.key, this.endlessLevel});
+
+  final QuizLevel? endlessLevel;
 
   @override
   State<WhosThatScreen> createState() => _WhosThatScreenState();
@@ -20,8 +23,14 @@ class WhosThatScreen extends StatefulWidget {
 
 class _WhosThatScreenState extends State<WhosThatScreen> {
   static const perLevel = QuizEngine.questionsPerLevel;
+  static const endlessLives = 3;
 
+  /// Perguntas geradas à frente no modo infinito (para pré-carregar imagens).
+  static const _lookahead = 4;
+
+  final _engine = QuizEngine();
   late final List<QuizQuestion> _questions;
+  int _lives = endlessLives;
   final _answerTime = Stopwatch();
   final _typed = TextEditingController();
   final Map<QuizLevel, int> _hitsPerLevel = {};
@@ -33,6 +42,8 @@ class _WhosThatScreenState extends State<WhosThatScreen> {
   bool? _lastWasCorrect;
   Pokemon? _picked;
 
+  QuizLevel? get _endless => widget.endlessLevel;
+  bool get _isEndless => _endless != null;
   QuizQuestion get _q => _questions[_index];
   QuizLevel get _level => _q.level;
   int get _hits => _hitsPerLevel.values.fold(0, (a, b) => a + b);
@@ -40,7 +51,9 @@ class _WhosThatScreenState extends State<WhosThatScreen> {
   @override
   void initState() {
     super.initState();
-    _questions = QuizEngine().buildGame();
+    _questions = _isEndless
+        ? [for (var i = 0; i < _lookahead; i++) _engine.nextQuestion(_endless!)]
+        : _engine.buildGame();
     _answerTime.start();
   }
 
@@ -78,10 +91,33 @@ class _WhosThatScreenState extends State<WhosThatScreen> {
       _lastPoints = ok ? _level.pointsFor(_answerTime.elapsed) : 0;
       _score += _lastPoints;
       if (ok) _hitsPerLevel.update(_level, (v) => v + 1, ifAbsent: () => 1);
+      if (!ok && _isEndless) _lives--;
     });
   }
 
   Future<void> _next() async {
+    if (_isEndless) {
+      if (_lives == 0) {
+        _finish();
+        return;
+      }
+      final added = _engine.nextQuestion(_endless!);
+      setState(() {
+        _questions.add(added);
+        _index++;
+        _lastWasCorrect = null;
+        _picked = null;
+        _typed.clear();
+      });
+      precacheImage(
+        pokemonImageProvider(added.answer.imageUrl),
+        context,
+      ).catchError((_) {});
+      _answerTime
+        ..reset()
+        ..start();
+      return;
+    }
     if (_index == _questions.length - 1) {
       _finish();
       return;
@@ -123,6 +159,25 @@ class _WhosThatScreenState extends State<WhosThatScreen> {
   );
 
   void _finish() {
+    if (_isEndless) {
+      final level = _endless!;
+      final answered = _index + (_lastWasCorrect != null ? 1 : 0);
+      Navigator.of(context).pushReplacement(
+        MaterialPageRoute(
+          builder: (_) => GameResultScreen(
+            game: GameId.whosThatEndless,
+            score: _score,
+            headline: '${level.label}: $_hits acerto(s)',
+            details: [
+              '${level.title} • modo infinito',
+              '$answered Pokémon respondido(s)',
+            ],
+            playAgain: (_) => WhosThatScreen(endlessLevel: level),
+          ),
+        ),
+      );
+      return;
+    }
     final total = _questions.length;
     Navigator.of(context).pushReplacement(
       MaterialPageRoute(
@@ -153,17 +208,33 @@ class _WhosThatScreenState extends State<WhosThatScreen> {
     final inLevel = _index % perLevel;
 
     return ConfirmExit(
+      enabled: !(_isEndless && _lives == 0),
       child: PokeScaffold(
         appBar: AppBar(
-          title: Text('${_level.label} • ${_level.title}'),
-          bottom: PreferredSize(
-            preferredSize: const Size.fromHeight(6),
-            child: LinearProgressIndicator(
-              color: Colors.amber,
-              backgroundColor: Colors.white24,
-              value: (inLevel + (answered ? 1 : 0)) / perLevel,
-            ),
+          title: Text(
+            _isEndless
+                ? '${_level.label} • Infinito'
+                : '${_level.label} • ${_level.title}',
           ),
+          actions: [
+            if (_isEndless && _lives > 0)
+              TextButton.icon(
+                style: TextButton.styleFrom(foregroundColor: Colors.white),
+                onPressed: _finish,
+                icon: const Icon(Icons.flag),
+                label: const Text('Encerrar'),
+              ),
+          ],
+          bottom: _isEndless
+              ? null
+              : PreferredSize(
+                  preferredSize: const Size.fromHeight(6),
+                  child: LinearProgressIndicator(
+                    color: Colors.amber,
+                    backgroundColor: Colors.white24,
+                    value: (inLevel + (answered ? 1 : 0)) / perLevel,
+                  ),
+                ),
         ),
         body: SafeArea(
           child: ListView(
@@ -172,7 +243,28 @@ class _WhosThatScreenState extends State<WhosThatScreen> {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  _Pill('${inLevel + 1}/$perLevel', Icons.catching_pokemon),
+                  if (_isEndless)
+                    Chip(
+                      key: const ValueKey('lives'),
+                      label: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          for (var i = 0; i < endlessLives; i++)
+                            Icon(
+                              i < _lives
+                                  ? Icons.favorite
+                                  : Icons.favorite_border,
+                              color: Colors.red,
+                              size: 20,
+                            ),
+                        ],
+                      ),
+                      backgroundColor: Colors.white,
+                      side: BorderSide.none,
+                    )
+                  else
+                    _Pill('${inLevel + 1}/$perLevel', Icons.catching_pokemon),
+                  if (_isEndless) _Pill('$_hits acertos', Icons.check_circle),
                   _Pill('$_score pts', Icons.star),
                 ],
               ),
@@ -215,7 +307,11 @@ class _WhosThatScreenState extends State<WhosThatScreen> {
                 FilledButton(
                   onPressed: _next,
                   child: Text(
-                    _index == _questions.length - 1
+                    _isEndless
+                        ? (_lives == 0
+                              ? 'Fim de jogo — ver resultado'
+                              : 'Próximo')
+                        : _index == _questions.length - 1
                         ? 'Ver resultado'
                         : inLevel == perLevel - 1
                         ? 'Próximo level'

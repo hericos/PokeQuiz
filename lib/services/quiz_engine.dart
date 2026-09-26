@@ -25,6 +25,20 @@ class QuizEngine {
     ];
   }
 
+  final _used = <Pokemon>{};
+
+  /// Próxima pergunta do modo infinito: sem repetir Pokémon até esgotar a
+  /// Pokédex (aí recomeça).
+  QuizQuestion nextQuestion(QuizLevel level) {
+    if (_used.length >= _pool.length) _used.clear();
+    Pokemon answer;
+    do {
+      answer = _pool[_random.nextInt(_pool.length)];
+    } while (_used.contains(answer));
+    _used.add(answer);
+    return _question(level, answer);
+  }
+
   QuizQuestion _question(QuizLevel level, Pokemon answer) => QuizQuestion(
     level: level,
     answer: answer,
