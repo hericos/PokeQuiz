@@ -4,8 +4,8 @@ Quiz de Pokémon feito em **Flutter** (Android agora, iOS no futuro).
 
 ## Funcionalidades
 
-- **Login local** (e-mail + senha, guardados no aparelho com hash SHA-256 + salt) e **login com Google**.
-- **Perfil**: foto (galeria ou câmera), nome, idade, cidade, país, Pokémon preferido (busca por nome ou número) e bio.
+- **Conta com e-mail e senha no Firebase Auth**, com "Esqueci minha senha" e exclusão de conta.
+- **Perfil no Firestore** (vale em qualquer aparelho): foto (galeria ou câmera), nome, idade, cidade, país, Pokémon preferido (busca por nome ou número) e bio.
 - **Todos os 1025 Pokémon** da Pokédex Nacional (Kanto até Paldea).
 - Navegação em 3 abas: **Jogos**, **Ranking** e **Perfil**. Cada jogo é um card no catálogo.
 
@@ -30,8 +30,9 @@ A dica mostra a região do Pokémon.
 
 ### Ranking
 
-Ao fim de cada partida aparece sua posição. Há ranking por jogo (melhor partida)
-e geral (soma dos recordes), com títulos de *Treinador Iniciante* a *Mestre Pokémon*.
+**Global**, no Firestore. Ao fim de cada partida aparece sua posição. Há ranking por
+jogo (melhor partida) e geral (soma dos recordes), com títulos de *Treinador Iniciante*
+a *Mestre Pokémon*.
 
 ### Adicionando um jogo novo
 
@@ -47,13 +48,15 @@ As imagens vêm do repositório [PokeAPI/sprites](https://github.com/PokeAPI/spr
 
 ```
 lib/
-  main.dart                   # bootstrap, providers e roteamento login/home
+  main.dart                   # inicializa o Firebase, providers e roteamento
+  firebase_options.dart       # gerado pelo `flutterfire configure`
   theme.dart                  # cores (fundo rosado) e tema
   data/pokemon_names.dart     # os 1025 nomes (gerado da PokeAPI)
   models/                     # Pokemon/Region, GameId, QuizLevel, UserProfile
   services/
-    database_service.dart     # SQLite (usuários e pontuações por jogo)
-    auth_service.dart         # login local + Google, sessão
+    auth_service.dart         # Firebase Auth (e-mail/senha) + perfil no Firestore
+    score_service.dart        # ranking global no Firestore
+    photo_encoder.dart        # recorta/comprime a foto do perfil
     quiz_engine.dart          # sorteio do "Quem é esse Pokémon?" e normalização
     hangman_engine.dart       # regras da Forca
   screens/                    # login, abas, jogos, resultado, ranking, perfil
@@ -69,22 +72,41 @@ flutter test
 flutter run                 # com um emulador/aparelho Android conectado
 ```
 
-## Login com Google (Android)
+## Configurar o Firebase (uma vez)
 
-O login com Google precisa de um projeto no Google Cloud (não precisa de Firebase):
+Sem isso o app abre numa tela "Firebase não configurado".
 
-1. Em **APIs e serviços → Credenciais**, crie um *OAuth client ID* do tipo **Android**
-   com o pacote `com.hericos.pokequiz` e o SHA-1 da sua chave
-   (`cd android && ./gradlew signingReport`).
-2. Crie também um *OAuth client ID* do tipo **Web application**. O ID dele é o
-   `serverClientId` exigido pelo Credential Manager do Android.
-3. Rode/compile informando o ID Web:
+1. Em https://console.firebase.google.com crie um projeto (ex.: `pokequiz`). Pode desativar o Google Analytics.
+2. **Authentication → Começar → Método de login → E-mail/senha → Ativar**.
+3. **Firestore Database → Criar banco de dados** → modo de **produção** → região `southamerica-east1` (São Paulo).
+4. Publique as regras de segurança: copie o conteúdo de [`firestore.rules`](firestore.rules) em
+   **Firestore → Regras → Publicar** (ou `firebase deploy --only firestore:rules`).
+5. No seu PC, gere a configuração do app:
 
 ```bash
-flutter run --dart-define=GOOGLE_SERVER_CLIENT_ID=xxxx.apps.googleusercontent.com
+npm install -g firebase-tools        # ou o instalador standalone do Firebase CLI
+firebase login
+dart pub global activate flutterfire_cli
+flutterfire configure --project=<id-do-projeto> --platforms=android,ios
 ```
 
-No GitHub Actions, cadastre o secret `GOOGLE_SERVER_CLIENT_ID`.
+   Isso sobrescreve `lib/firebase_options.dart` e cria `android/app/google-services.json`
+   (e o equivalente do iOS). **Faça commit desses arquivos**: eles não são segredos
+   (a segurança vem das regras do Firestore), e assim o GitHub Actions gera o APK já configurado.
+
+Tudo isso cabe no plano gratuito (Spark). A foto do perfil é guardada comprimida
+no próprio documento do Firestore, por isso não é preciso o Cloud Storage (que exige plano pago).
+
+### Dados no Firestore
+
+| Coleção | Conteúdo | Quem lê |
+|---|---|---|
+| `users/{uid}` | perfil completo e foto | só o próprio usuário |
+| `leaderboard/{uid}` | nome, miniatura, recorde por jogo e total | qualquer usuário logado |
+
+As pontuações são enviadas pelo próprio app, então um usuário mal-intencionado
+poderia forjar um recorde. Para um ranking à prova de trapaça, o próximo passo seria
+validar as partidas numa Cloud Function.
 
 ## Build de release para Android
 
@@ -107,5 +129,5 @@ como artefato a cada push.
 ## iOS (futuro)
 
 O projeto já inclui a pasta `ios/` e as permissões de câmera/galeria no `Info.plist`.
-Para o Google no iOS, será preciso adicionar o `GIDClientID` e o URL scheme
-conforme o [README do google_sign_in_ios](https://pub.dev/packages/google_sign_in_ios#ios-integration).
+Ao rodar `flutterfire configure` com `ios`, o `GoogleService-Info.plist` é criado.
+O Firebase exige iOS 15+ (ajuste `platform :ios` no `ios/Podfile`).

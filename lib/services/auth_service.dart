@@ -1,14 +1,10 @@
 import 'dart:async';
-import 'dart:convert';
-import 'dart:math';
 
-import 'package:crypto/crypto.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
-import 'package:google_sign_in/google_sign_in.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
 import '../models/user_profile.dart';
-import 'database_service.dart';
 
 class AuthException implements Exception {
   final String message;
@@ -18,32 +14,66 @@ class AuthException implements Exception {
   String toString() => message;
 }
 
-/// Login local (e-mail/senha guardados no aparelho) e login com Google.
+/// Conta por e-mail e senha no Firebase Auth; perfil no Firestore.
 class AuthService extends ChangeNotifier {
-  AuthService(this._db, this._prefs);
+  AuthService({FirebaseAuth? auth, FirebaseFirestore? firestore})
+    : _auth = auth ?? FirebaseAuth.instance,
+      _db = firestore ?? FirebaseFirestore.instance {
+    _sub = _auth.authStateChanges().listen(_onAuthChanged);
+  }
 
-  static const _sessionKey = 'session_user_id';
+  final FirebaseAuth _auth;
+  final FirebaseFirestore _db;
+  late final StreamSubscription<User?> _sub;
 
-  /// Client ID "Web" do Google Cloud, exigido pelo Android (Credential Manager).
-  /// Informe com: --dart-define=GOOGLE_SERVER_CLIENT_ID=xxxx.apps.googleusercontent.com
-  static const _serverClientId = String.fromEnvironment(
-    'GOOGLE_SERVER_CLIENT_ID',
-  );
-
-  final DatabaseService _db;
-  final SharedPreferences _prefs;
   UserProfile? _user;
-  Future<void>? _googleInit;
+  bool _initializing = true;
 
   UserProfile? get currentUser => _user;
   bool get isLoggedIn => _user != null;
 
-  Future<void> restoreSession() async {
-    final id = _prefs.getInt(_sessionKey);
-    if (id != null) {
-      _user = await _db.findUserById(id);
-      if (_user == null) await _prefs.remove(_sessionKey);
+  /// true até sabermos se há uma sessão salva no aparelho.
+  bool get initializing => _initializing;
+
+  DocumentReference<Map<String, dynamic>> _userDoc(String uid) =>
+      _db.collection('users').doc(uid);
+
+  DocumentReference<Map<String, dynamic>> _boardDoc(String uid) =>
+      _db.collection('leaderboard').doc(uid);
+
+  Future<void> _onAuthChanged(User? user) async {
+    if (user == null) {
+      _user = null;
+    } else {
+      try {
+        final doc = await _userDoc(user.uid).get();
+        // Logo após o cadastro o documento pode ainda não existir; nesse caso
+        // mantém o perfil que o register() acabou de montar.
+        if (!doc.exists && _user?.id == user.uid) {
+          _finishInit();
+          return;
+        }
+        _user = doc.exists
+            ? UserProfile.fromDoc(doc)
+            : UserProfile(
+                id: user.uid,
+                email: user.email ?? '',
+                name: user.displayName ?? 'Treinador',
+              );
+      } catch (_) {
+        // Sem rede e sem cache: entra com o mínimo; o perfil carrega depois.
+        _user = UserProfile(
+          id: user.uid,
+          email: user.email ?? '',
+          name: user.displayName ?? '',
+        );
+      }
     }
+    _finishInit();
+  }
+
+  void _finishInit() {
+    _initializing = false;
     notifyListeners();
   }
 
@@ -51,115 +81,105 @@ class AuthService extends ChangeNotifier {
     required String name,
     required String email,
     required String password,
-  }) async {
-    email = email.trim().toLowerCase();
-    if (await _db.findUserRowByEmail(email) != null) {
-      throw const AuthException('Já existe uma conta com esse e-mail.');
-    }
-    final salt = _randomSalt();
-    final id = await _db.insertUser(
-      email: email,
-      provider: AuthProvider.local,
+  }) => _guard(() async {
+    final cred = await _auth.createUserWithEmailAndPassword(
+      email: email.trim(),
+      password: password,
+    );
+    final uid = cred.user!.uid;
+    await cred.user!.updateDisplayName(name.trim());
+    final profile = UserProfile(
+      id: uid,
+      email: email.trim(),
       name: name.trim(),
-      passwordHash: hashPassword(password, salt),
-      salt: salt,
     );
-    await _startSession(id);
-  }
-
-  Future<void> login({required String email, required String password}) async {
-    final row = await _db.findUserRowByEmail(email.trim());
-    if (row == null) {
-      throw const AuthException('E-mail ou senha inválidos.');
-    }
-    if (row['provider'] == AuthProvider.google.name) {
-      throw const AuthException(
-        'Essa conta foi criada com o Google. Use "Entrar com Google".',
-      );
-    }
-    final expected = row['password_hash'] as String;
-    if (hashPassword(password, row['salt'] as String) != expected) {
-      throw const AuthException('E-mail ou senha inválidos.');
-    }
-    await _startSession(row['id'] as int);
-  }
-
-  bool get googleSupported => GoogleSignIn.instance.supportsAuthenticate();
-
-  Future<void> loginWithGoogle() async {
-    final signIn = GoogleSignIn.instance;
-    _googleInit ??= signIn.initialize(
-      serverClientId: _serverClientId.isEmpty ? null : _serverClientId,
-    );
-    try {
-      await _googleInit;
-    } catch (_) {
-      _googleInit = null;
-      rethrow;
-    }
-
-    final GoogleSignInAccount account;
-    try {
-      account = await signIn.authenticate();
-    } on GoogleSignInException catch (e) {
-      if (e.code == GoogleSignInExceptionCode.canceled) {
-        throw const AuthException('Login com Google cancelado.');
-      }
-      throw AuthException(
-        'Falha no login com Google: ${e.description ?? e.code.name}',
-      );
-    }
-
-    final existing = await _db.findUserRowByEmail(account.email);
-    int id;
-    if (existing == null) {
-      id = await _db.insertUser(
-        email: account.email,
-        provider: AuthProvider.google,
-        name: account.displayName ?? account.email.split('@').first,
-        photo: account.photoUrl,
-      );
-    } else {
-      id = existing['id'] as int;
-    }
-    await _startSession(id);
-  }
-
-  Future<void> logout() async {
-    if (_user?.provider == AuthProvider.google && _googleInit != null) {
-      try {
-        await GoogleSignIn.instance.signOut();
-      } catch (_) {}
-    }
-    _user = null;
-    await _prefs.remove(_sessionKey);
+    final batch = _db.batch()
+      ..set(_userDoc(uid), {
+        ...profile.toMap(),
+        'createdAt': FieldValue.serverTimestamp(),
+      })
+      ..set(_boardDoc(uid), {
+        'name': profile.name,
+        'thumb': null,
+        'total': 0,
+        'best': <String, int>{},
+        'detail': <String, String>{},
+      });
+    await batch.commit();
+    _user = profile;
     notifyListeners();
-  }
+  });
+
+  Future<void> login({required String email, required String password}) =>
+      _guard(
+        () => _auth.signInWithEmailAndPassword(
+          email: email.trim(),
+          password: password,
+        ),
+      );
+
+  Future<void> sendPasswordReset(String email) =>
+      _guard(() => _auth.sendPasswordResetEmail(email: email.trim()));
+
+  Future<void> logout() => _auth.signOut();
 
   Future<void> updateProfile(UserProfile updated) async {
-    await _db.updateProfile(updated);
+    final batch = _db.batch()
+      ..set(_userDoc(updated.id), updated.toMap(), SetOptions(merge: true))
+      // Nome e miniatura também aparecem no ranking.
+      ..set(_boardDoc(updated.id), {
+        'name': updated.name,
+        'thumb': updated.photoThumb,
+      }, SetOptions(merge: true));
+    await batch.commit();
     _user = updated;
     notifyListeners();
   }
 
-  Future<void> _startSession(int id) async {
-    _user = await _db.findUserById(id);
-    await _prefs.setInt(_sessionKey, id);
-    notifyListeners();
-  }
+  /// Exclui a conta e os dados (exigência da Play Store). O Firebase pede
+  /// login recente, por isso a senha é confirmada antes.
+  Future<void> deleteAccount(String password) => _guard(() async {
+    final user = _auth.currentUser!;
+    await user.reauthenticateWithCredential(
+      EmailAuthProvider.credential(email: user.email!, password: password),
+    );
+    final batch = _db.batch()
+      ..delete(_userDoc(user.uid))
+      ..delete(_boardDoc(user.uid));
+    await batch.commit();
+    await user.delete();
+  });
 
-  static String _randomSalt() {
-    final rnd = Random.secure();
-    return base64UrlEncode(List<int>.generate(16, (_) => rnd.nextInt(256)));
-  }
-
-  /// SHA-256 iterado (10.000x) com salt aleatório por usuário.
-  @visibleForTesting
-  static String hashPassword(String password, String salt) {
-    List<int> digest = utf8.encode('$salt:$password');
-    for (var i = 0; i < 10000; i++) {
-      digest = sha256.convert(digest).bytes;
+  Future<void> _guard(Future<void> Function() action) async {
+    try {
+      await action();
+    } on FirebaseAuthException catch (e) {
+      throw AuthException(messageFor(e.code));
+    } on FirebaseException catch (e) {
+      throw AuthException('Erro no servidor: ${e.message ?? e.code}');
     }
-    return base64Encode(digest);
+  }
+
+  @visibleForTesting
+  static String messageFor(String code) => switch (code) {
+    'invalid-email' => 'E-mail inválido.',
+    'user-disabled' => 'Essa conta foi desativada.',
+    'user-not-found' ||
+    'wrong-password' ||
+    'invalid-credential' => 'E-mail ou senha inválidos.',
+    'email-already-in-use' => 'Já existe uma conta com esse e-mail.',
+    'weak-password' => 'Senha fraca: use pelo menos 6 caracteres.',
+    'too-many-requests' =>
+      'Muitas tentativas. Tente de novo em alguns minutos.',
+    'network-request-failed' => 'Sem conexão com a internet.',
+    'requires-recent-login' =>
+      'Por segurança, entre de novo e repita a operação.',
+    _ => 'Não foi possível concluir ($code).',
+  };
+
+  @override
+  void dispose() {
+    _sub.cancel();
+    super.dispose();
   }
 }

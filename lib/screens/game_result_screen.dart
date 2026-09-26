@@ -4,7 +4,7 @@ import 'package:provider/provider.dart';
 import '../models/game.dart';
 import '../models/quiz.dart';
 import '../services/auth_service.dart';
-import '../services/database_service.dart';
+import '../services/score_service.dart';
 import '../widgets/poke_background.dart';
 
 /// Tela de fim de partida comum a todos os jogos: salva a pontuação e mostra
@@ -34,7 +34,9 @@ class GameResultScreen extends StatefulWidget {
 }
 
 class _GameResultScreenState extends State<GameResultScreen> {
-  late final Future<({int position, int players, bool record, int total})>
+  late final Future<
+    ({int position, int players, bool record, int best, int total})
+  >
   _ranking;
 
   @override
@@ -43,24 +45,25 @@ class _GameResultScreenState extends State<GameResultScreen> {
     _ranking = _saveAndRank();
   }
 
-  Future<({int position, int players, bool record, int total})>
+  Future<({int position, int players, bool record, int best, int total})>
   _saveAndRank() async {
-    final db = context.read<DatabaseService>();
+    final scores = context.read<ScoreService>();
     final user = context.read<AuthService>().currentUser!;
-    final previous = (await db.bestScoresFor(user.id))[widget.game];
-    await db.insertScore(
-      user.id,
-      widget.game,
-      widget.score,
+    final saved = await scores.submit(
+      uid: user.id,
+      name: user.name,
+      thumb: user.photoThumb,
+      game: widget.game,
+      score: widget.score,
       detail: widget.headline,
     );
-    final ranking = await db.gameRanking(widget.game, limit: 100000);
-    final best = await db.bestScoresFor(user.id);
+    final pos = await scores.positionOf(widget.game, saved.best);
     return (
-      position: ranking.indexWhere((e) => e.userId == user.id) + 1,
-      players: ranking.length,
-      record: widget.score > 0 && (previous == null || widget.score > previous),
-      total: best.values.fold(0, (a, b) => a + b),
+      position: pos.position,
+      players: pos.players,
+      record: saved.isRecord,
+      best: saved.best,
+      total: saved.total,
     );
   }
 
@@ -123,7 +126,9 @@ class _GameResultScreenState extends State<GameResultScreen> {
                               color: Colors.green,
                               fontWeight: FontWeight.bold,
                             ),
-                          ),
+                          )
+                        else
+                          Text('Seu recorde: ${r.best} pts'),
                         Text(
                           '${r.position}º lugar entre ${r.players} treinador(es)',
                           style: textTheme.titleMedium,

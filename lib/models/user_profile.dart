@@ -1,9 +1,9 @@
-enum AuthProvider { local, google }
+import 'package:cloud_firestore/cloud_firestore.dart';
 
+/// Perfil do treinador, guardado em `users/{uid}` no Firestore.
 class UserProfile {
-  final int id;
+  final String id;
   final String email;
-  final AuthProvider provider;
   final String name;
   final int? age;
   final String? city;
@@ -11,13 +11,14 @@ class UserProfile {
   final String? favoritePokemon;
   final String? bio;
 
-  /// Caminho local de uma foto escolhida pelo usuário ou URL (foto do Google).
+  /// Foto em JPEG codificado em base64 (256px) e miniatura (64px) usada no
+  /// ranking. Guardadas no próprio documento, sem precisar do Cloud Storage.
   final String? photo;
+  final String? photoThumb;
 
   const UserProfile({
     required this.id,
     required this.email,
-    required this.provider,
     required this.name,
     this.age,
     this.city,
@@ -25,32 +26,35 @@ class UserProfile {
     this.favoritePokemon,
     this.bio,
     this.photo,
+    this.photoThumb,
   });
 
-  bool get photoIsRemote => photo != null && photo!.startsWith('http');
+  factory UserProfile.fromDoc(DocumentSnapshot<Map<String, dynamic>> doc) {
+    final d = doc.data() ?? const {};
+    return UserProfile(
+      id: doc.id,
+      email: d['email'] as String? ?? '',
+      name: d['name'] as String? ?? 'Treinador',
+      age: (d['age'] as num?)?.toInt(),
+      city: d['city'] as String?,
+      country: d['country'] as String?,
+      favoritePokemon: d['favoritePokemon'] as String?,
+      bio: d['bio'] as String?,
+      photo: d['photo'] as String?,
+      photoThumb: d['photoThumb'] as String?,
+    );
+  }
 
-  factory UserProfile.fromMap(Map<String, Object?> map) => UserProfile(
-    id: map['id'] as int,
-    email: map['email'] as String,
-    provider: AuthProvider.values.byName(map['provider'] as String),
-    name: map['name'] as String,
-    age: map['age'] as int?,
-    city: map['city'] as String?,
-    country: map['country'] as String?,
-    favoritePokemon: map['favorite_pokemon'] as String?,
-    bio: map['bio'] as String?,
-    photo: map['photo'] as String?,
-  );
-
-  /// Somente os campos editáveis pelo usuário.
-  Map<String, Object?> toProfileMap() => {
+  Map<String, Object?> toMap() => {
+    'email': email,
     'name': name,
     'age': age,
     'city': city,
     'country': country,
-    'favorite_pokemon': favoritePokemon,
+    'favoritePokemon': favoritePokemon,
     'bio': bio,
     'photo': photo,
+    'photoThumb': photoThumb,
   };
 
   UserProfile copyWith({
@@ -61,10 +65,10 @@ class UserProfile {
     String? Function()? favoritePokemon,
     String? Function()? bio,
     String? Function()? photo,
+    String? Function()? photoThumb,
   }) => UserProfile(
     id: id,
     email: email,
-    provider: provider,
     name: name ?? this.name,
     age: age != null ? age() : this.age,
     city: city != null ? city() : this.city,
@@ -74,5 +78,6 @@ class UserProfile {
         : this.favoritePokemon,
     bio: bio != null ? bio() : this.bio,
     photo: photo != null ? photo() : this.photo,
+    photoThumb: photoThumb != null ? photoThumb() : this.photoThumb,
   );
 }

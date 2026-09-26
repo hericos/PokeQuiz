@@ -4,7 +4,7 @@ import 'package:provider/provider.dart';
 import '../models/game.dart';
 import '../models/quiz.dart';
 import '../services/auth_service.dart';
-import '../services/database_service.dart';
+import '../services/score_service.dart';
 import '../widgets/user_avatar.dart';
 
 /// Ranking geral (soma dos recordes) ou de um jogo específico.
@@ -27,8 +27,7 @@ class _RankingScreenState extends State<RankingScreen> {
   }
 
   void _load() {
-    final db = context.read<DatabaseService>();
-    _entries = _game == null ? db.overallRanking() : db.gameRanking(_game!);
+    _entries = context.read<ScoreService>().ranking(_game);
   }
 
   void _select(GameId? game) => setState(() {
@@ -56,6 +55,15 @@ class _RankingScreenState extends State<RankingScreen> {
           child: FutureBuilder<List<RankingEntry>>(
             future: _entries,
             builder: (context, snap) {
+              if (snap.hasError) {
+                return const Center(
+                  child: Text(
+                    'Não foi possível carregar o ranking.\nVerifique sua conexão.',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(color: Colors.white, fontSize: 16),
+                  ),
+                );
+              }
               if (!snap.hasData) {
                 return const Center(
                   child: CircularProgressIndicator(color: Colors.white),

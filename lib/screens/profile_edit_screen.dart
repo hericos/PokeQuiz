@@ -1,14 +1,11 @@
-import 'dart:io';
-
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:path/path.dart' as p;
-import 'package:path_provider/path_provider.dart';
 import 'package:provider/provider.dart';
 
 import '../models/pokemon.dart';
 import '../models/user_profile.dart';
 import '../services/auth_service.dart';
+import '../services/photo_encoder.dart';
 import '../widgets/poke_background.dart';
 import '../widgets/pokemon_image.dart';
 import '../widgets/user_avatar.dart';
@@ -25,6 +22,7 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
   late final UserProfile _original;
   late final TextEditingController _name, _age, _city, _country, _bio;
   String? _photo;
+  String? _thumb;
   String? _favorite;
   bool _saving = false;
 
@@ -40,6 +38,7 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
     _country = TextEditingController(text: _original.country ?? '');
     _bio = TextEditingController(text: _original.bio ?? '');
     _photo = _original.photo;
+    _thumb = _original.photoThumb;
     _favorite = _original.favoritePokemon;
   }
 
@@ -55,19 +54,23 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
     Navigator.of(context).pop();
     final picked = await ImagePicker().pickImage(
       source: source,
-      maxWidth: 512,
-      maxHeight: 512,
-      imageQuality: 85,
+      maxWidth: 1024,
+      maxHeight: 1024,
+      imageQuality: 90,
     );
     if (picked == null) return;
-    // Copia para a pasta do app para a foto não sumir se o cache for limpo.
-    final dir = await getApplicationDocumentsDirectory();
-    final dest = p.join(
-      dir.path,
-      'avatar_${_original.id}_${DateTime.now().millisecondsSinceEpoch}${p.extension(picked.path)}',
-    );
-    await File(picked.path).copy(dest);
-    setState(() => _photo = dest);
+    final encoded = await encodeProfilePhoto(await picked.readAsBytes());
+    if (!mounted) return;
+    if (encoded == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Não foi possível ler essa imagem.')),
+      );
+      return;
+    }
+    setState(() {
+      _photo = encoded.photo;
+      _thumb = encoded.thumb;
+    });
   }
 
   void _showPhotoOptions() {
@@ -92,7 +95,7 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
                 title: const Text('Remover foto'),
                 onTap: () {
                   Navigator.of(ctx).pop();
-                  setState(() => _photo = null);
+                  setState(() => _photo = _thumb = null);
                 },
               ),
           ],
@@ -114,8 +117,17 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
       bio: () => _nullIfEmpty(_bio.text),
       favoritePokemon: () => _favorite,
       photo: () => _photo,
+      photoThumb: () => _thumb,
     );
-    await context.read<AuthService>().updateProfile(updated);
+    try {
+      await context.read<AuthService>().updateProfile(updated);
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _saving = false);
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text('Não foi possível salvar: $e')));
+      return;
+    }
     if (!mounted) return;
     ScaffoldMessenger.of(context)
         .showSnackBar(const SnackBar(content: Text('Perfil atualizado!')));

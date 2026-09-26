@@ -46,7 +46,7 @@ class QuizQuestion {
 }
 
 class RankingEntry {
-  final int userId;
+  final String userId;
   final String name;
   final String? photo;
   final int score;

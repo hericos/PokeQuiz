@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../models/pokemon.dart';
-import '../models/user_profile.dart';
 import '../services/auth_service.dart';
 import '../widgets/pokemon_image.dart';
 import '../widgets/user_avatar.dart';
@@ -53,19 +52,6 @@ class ProfileScreen extends StatelessWidget {
                         avatar: const Icon(Icons.place, size: 18),
                         label: Text(place),
                       ),
-                    Chip(
-                      avatar: Icon(
-                        user.provider == AuthProvider.google
-                            ? Icons.g_mobiledata
-                            : Icons.lock,
-                        size: 18,
-                      ),
-                      label: Text(
-                        user.provider == AuthProvider.google
-                            ? 'Conta Google'
-                            : 'Conta local',
-                      ),
-                    ),
                   ],
                 ),
                 if (user.bio != null) ...[
@@ -102,7 +88,78 @@ class ProfileScreen extends StatelessWidget {
           label: const Text('Sair'),
           onPressed: auth.logout,
         ),
+        const SizedBox(height: 24),
+        Center(
+          child: TextButton.icon(
+            style: TextButton.styleFrom(foregroundColor: Colors.white),
+            icon: const Icon(Icons.delete_forever),
+            label: const Text('Excluir minha conta'),
+            onPressed: () => _confirmDelete(context),
+          ),
+        ),
+        const _FanAppNotice(),
       ],
     );
   }
+
+  Future<void> _confirmDelete(BuildContext context) async {
+    final password = TextEditingController();
+    final auth = context.read<AuthService>();
+    final messenger = ScaffoldMessenger.of(context);
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Excluir conta?'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Text(
+              'Seu perfil e suas pontuações serão apagados para sempre. '
+              'Digite sua senha para confirmar.',
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: password,
+              obscureText: true,
+              decoration: const InputDecoration(labelText: 'Senha'),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Cancelar'),
+          ),
+          TextButton(
+            style: TextButton.styleFrom(foregroundColor: Colors.red),
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Excluir'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true) return;
+    try {
+      await auth.deleteAccount(password.text);
+      messenger.showSnackBar(const SnackBar(content: Text('Conta excluída.')));
+    } catch (e) {
+      messenger.showSnackBar(SnackBar(content: Text(e.toString())));
+    }
+  }
+}
+
+class _FanAppNotice extends StatelessWidget {
+  const _FanAppNotice();
+
+  @override
+  Widget build(BuildContext context) => const Padding(
+    padding: EdgeInsets.only(top: 8),
+    child: Text(
+      'PokeQuiz é um app de fã, sem fins lucrativos e sem vínculo com '
+      'Nintendo, Game Freak ou The Pokémon Company. Pokémon e os nomes '
+      'dos personagens são marcas de seus respectivos donos.',
+      textAlign: TextAlign.center,
+      style: TextStyle(color: Colors.white70, fontSize: 11),
+    ),
+  );
 }

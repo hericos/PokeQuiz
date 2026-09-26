@@ -28,15 +28,18 @@ class _LoginScreenState extends State<LoginScreen> {
     super.dispose();
   }
 
-  Future<void> _run(Future<void> Function() action) async {
+  /// Executa [action] mostrando carregamento; retorna false se deu erro.
+  Future<bool> _run(Future<void> Function() action) async {
     setState(() => _busy = true);
     try {
       await action();
+      return true;
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context)
             .showSnackBar(SnackBar(content: Text(e.toString())));
       }
+      return false;
     } finally {
       if (mounted) setState(() => _busy = false);
     }
@@ -56,9 +59,32 @@ class _LoginScreenState extends State<LoginScreen> {
     );
   }
 
+  Future<void> _forgotPassword() async {
+    final email = _email.text.trim();
+    if (!RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$').hasMatch(email)) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Digite seu e-mail no campo acima primeiro.'),
+        ),
+      );
+      return;
+    }
+    final ok = await _run(
+      () => context.read<AuthService>().sendPasswordReset(email),
+    );
+    if (!ok || !mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          'Se houver uma conta para $email, enviamos um link para '
+          'redefinir a senha.',
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-    final auth = context.read<AuthService>();
     return PokeScaffold(
       body: SafeArea(
         child: Center(
@@ -167,30 +193,11 @@ class _LoginScreenState extends State<LoginScreen> {
                                     : 'Não tem conta? Cadastre-se',
                               ),
                             ),
-                            if (auth.googleSupported) ...[
-                              const Padding(
-                                padding: EdgeInsets.symmetric(vertical: 16),
-                                child: Row(
-                                  children: [
-                                    Expanded(child: Divider()),
-                                    Padding(
-                                      padding: EdgeInsets.symmetric(
-                                        horizontal: 8,
-                                      ),
-                                      child: Text('ou'),
-                                    ),
-                                    Expanded(child: Divider()),
-                                  ],
-                                ),
+                            if (!_registering)
+                              TextButton(
+                                onPressed: _busy ? null : _forgotPassword,
+                                child: const Text('Esqueci minha senha'),
                               ),
-                              OutlinedButton.icon(
-                                onPressed: _busy
-                                    ? null
-                                    : () => _run(auth.loginWithGoogle),
-                                icon: const Icon(Icons.g_mobiledata, size: 32),
-                                label: const Text('Entrar com Google'),
-                              ),
-                            ],
                             if (_busy) ...[
                               const SizedBox(height: 24),
                               const Center(child: CircularProgressIndicator()),

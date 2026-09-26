@@ -4,7 +4,7 @@ import 'package:provider/provider.dart';
 import '../models/game.dart';
 import '../models/quiz.dart';
 import '../services/auth_service.dart';
-import '../services/database_service.dart';
+import '../services/score_service.dart';
 import '../widgets/user_avatar.dart';
 import 'hangman_screen.dart';
 import 'whos_that_screen.dart';
@@ -33,7 +33,7 @@ class _GamesScreenState extends State<GamesScreen> {
 
   void _load() {
     final user = context.read<AuthService>().currentUser!;
-    _best = context.read<DatabaseService>().bestScoresFor(user.id);
+    _best = context.read<ScoreService>().bestScoresFor(user.id);
   }
 
   Future<void> _play(GameId game) async {
@@ -55,7 +55,7 @@ class _GamesScreenState extends State<GamesScreen> {
           children: [
             Row(
               children: [
-                UserAvatar(name: user.name, photo: user.photo, radius: 26),
+                UserAvatar(name: user.name, photo: user.photoThumb, radius: 26),
                 const SizedBox(width: 12),
                 Expanded(
                   child: Column(
