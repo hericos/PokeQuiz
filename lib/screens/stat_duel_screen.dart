@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../models/dex.dart';
 import '../models/game.dart';
 import '../services/stat_duel_engine.dart';
+import '../widgets/answer_countdown.dart';
 import '../widgets/confirm_exit.dart';
 import '../widgets/poke_background.dart';
 import '../widgets/pokemon_image.dart';
@@ -17,7 +18,7 @@ class StatDuelScreen extends StatefulWidget {
   State<StatDuelScreen> createState() => _StatDuelScreenState();
 }
 
-class _StatDuelScreenState extends State<StatDuelScreen> {
+class _StatDuelScreenState extends State<StatDuelScreen> with AnswerCountdown {
   StatDuelEngine? _engine;
   StatDuelRound? _round;
   StatDuelRound? _upcoming;
@@ -37,6 +38,7 @@ class _StatDuelScreenState extends State<StatDuelScreen> {
       _engine = StatDuelEngine(dex);
       setState(() => _round = _engine!.next());
       _prepareNext();
+      startCountdown();
     });
   }
 
@@ -54,6 +56,7 @@ class _StatDuelScreenState extends State<StatDuelScreen> {
 
   void _pick(int side) {
     if (_picked != null) return;
+    stopCountdown();
     setState(() {
       _picked = side;
       if (side == _round!.winner) {
@@ -70,9 +73,15 @@ class _StatDuelScreenState extends State<StatDuelScreen> {
       _picked = null;
     });
     _prepareNext();
+    startCountdown();
   }
 
+  /// Tempo esgotado: conta como resposta errada (índice -1).
+  @override
+  void onCountdownTimeout() => _pick(-1);
+
   void _finish() {
+    stopCountdown();
     final r = _round!;
     Navigator.of(context).pushReplacement(
       MaterialPageRoute(
@@ -142,9 +151,15 @@ class _StatDuelScreenState extends State<StatDuelScreen> {
                       ],
                     ),
                     const SizedBox(height: 8),
+                    countdownBar(),
+                    const SizedBox(height: 8),
                     Text(
                       answered
-                          ? (correct ? 'Acertou!' : 'Errou!')
+                          ? (correct
+                                ? 'Acertou!'
+                                : _picked == -1
+                                ? 'Tempo esgotado!'
+                                : 'Errou!')
                           : 'Quem tem mais',
                       textAlign: TextAlign.center,
                       style: const TextStyle(

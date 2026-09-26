@@ -52,6 +52,13 @@ valor maior e vem outro par. São 3 vidas; a pontuação é o total de acertos.
 Evoluções (2º e 3º estágio) aparecem com mais frequência, e entram também ~200
 formas extras. Os status base também vêm da PokeAPI (`assets/data/pokedex.json`).
 
+**Fato ou Fake: Ash** — 50 afirmações sobre a história do Ash no anime (em
+`lib/data/ash_facts.dart`), em ordem aleatória. Responda FATO ou FAKE; depois de cada
+resposta aparece a explicação. 3 vidas; a pontuação é o total de acertos.
+
+**Tempo:** em todos os jogos há 10 segundos para responder (na Forca, 10s por letra).
+Se o tempo acabar, conta como erro.
+
 ### Ranking
 
 **Global**, no Firestore. Ao fim de cada partida aparece sua posição. Há ranking por

@@ -50,4 +50,18 @@ void main() {
       expect(flabebe.masked, '____é_é');
     },
   );
+
+  test('tempo esgotado conta como erro', () {
+    final r = roundFor('Mew');
+    r.timeout();
+    r.guess('Z');
+    expect(r.errors, 2);
+    expect(r.livesLeft, 3);
+    for (var i = 0; i < 3; i++) {
+      r.timeout();
+    }
+    expect(r.isLost, isTrue);
+    r.timeout();
+    expect(r.errors, 5, reason: 'rodada encerrada não soma mais erros');
+  });
 }

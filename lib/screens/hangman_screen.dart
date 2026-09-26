@@ -6,6 +6,7 @@ import '../models/game.dart';
 import '../models/pokemon.dart';
 import '../services/hangman_engine.dart';
 import '../widgets/banette_gallows.dart';
+import '../widgets/answer_countdown.dart';
 import '../widgets/confirm_exit.dart';
 import '../widgets/poke_background.dart';
 import '../widgets/pokemon_image.dart';
@@ -20,7 +21,7 @@ class HangmanScreen extends StatefulWidget {
   State<HangmanScreen> createState() => _HangmanScreenState();
 }
 
-class _HangmanScreenState extends State<HangmanScreen> {
+class _HangmanScreenState extends State<HangmanScreen> with AnswerCountdown {
   static const _alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
 
   final _random = Random();
@@ -33,6 +34,7 @@ class _HangmanScreenState extends State<HangmanScreen> {
   void initState() {
     super.initState();
     _round = _newRound();
+    startCountdown();
   }
 
   HangmanRound _newRound() {
@@ -57,6 +59,7 @@ class _HangmanScreenState extends State<HangmanScreen> {
     ).catchError((_) {});
   }
 
+  /// 10 segundos para cada letra; o tempo reinicia a cada jogada.
   void _guess(String letter) {
     setState(() {
       _round.guess(letter);
@@ -65,14 +68,31 @@ class _HangmanScreenState extends State<HangmanScreen> {
         _solved++;
       }
     });
+    _restartCountdown();
+  }
+
+  @override
+  void onCountdownTimeout() {
+    setState(_round.timeout);
+    _restartCountdown();
+  }
+
+  void _restartCountdown() {
+    if (_round.isOver) {
+      stopCountdown();
+    } else {
+      startCountdown();
+    }
   }
 
   void _nextRound() {
     setState(() => _round = _newRound());
     _precacheCurrent();
+    startCountdown();
   }
 
   void _finish() {
+    stopCountdown();
     Navigator.of(context).pushReplacement(
       MaterialPageRoute(
         builder: (_) => GameResultScreen(
@@ -115,12 +135,14 @@ class _HangmanScreenState extends State<HangmanScreen> {
                   ),
                   Chip(
                     avatar: const Icon(Icons.star, size: 18),
-                    label: Text('$_score pts • $_solved ✓'),
+                    label: Text('$_score pts • $_solved acertos'),
                     backgroundColor: Colors.white,
                     side: BorderSide.none,
                   ),
                 ],
               ),
+              const SizedBox(height: 8),
+              countdownBar(),
               const SizedBox(height: 8),
               Card(
                 child: Padding(

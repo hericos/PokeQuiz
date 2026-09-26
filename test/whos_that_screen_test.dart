@@ -27,4 +27,17 @@ void main() {
     await tester.pump(const Duration(milliseconds: 500));
     expect(find.byType(OutlinedButton), findsNWidgets(3));
   });
+
+  testWidgets('tempo esgotado conta como erro e tira uma vida', (tester) async {
+    tester.view.physicalSize = const Size(600, 1400);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    await tester.pumpWidget(
+      const MaterialApp(home: WhosThatScreen(endlessLevel: QuizLevel.full)),
+    );
+    await tester.pump(const Duration(seconds: 11));
+    expect(find.text('Tempo esgotado!'), findsOneWidget);
+    expect(find.byIcon(Icons.favorite), findsNWidgets(2));
+    expect(find.text('Próximo'), findsOneWidget);
+  });
 }

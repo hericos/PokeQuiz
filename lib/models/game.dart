@@ -23,6 +23,11 @@ enum GameId {
     'Dois Pokémon lado a lado, incluindo Megas e formas regionais: toque no que tem mais HP, Ataque, Velocidade... 3 vidas.',
     Icons.bar_chart_rounded,
   ),
+  factOrFake(
+    'Fato ou Fake: Ash',
+    'Afirmações sobre a história do Ash no anime: é fato ou fake? 3 vidas e 10 segundos por resposta.',
+    Icons.fact_check,
+  ),
 
   /// Modo infinito do "Quem é esse Pokémon?". Não aparece como card próprio:
   /// é escolhido dentro do card do whosThat, mas tem ranking separado.

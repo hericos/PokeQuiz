@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../models/dex.dart';
 import '../models/game.dart';
 import '../services/odd_one_out_engine.dart';
+import '../widgets/answer_countdown.dart';
 import '../widgets/confirm_exit.dart';
 import '../widgets/poke_background.dart';
 import '../widgets/pokemon_image.dart';
@@ -17,7 +18,8 @@ class OddOneOutScreen extends StatefulWidget {
   State<OddOneOutScreen> createState() => _OddOneOutScreenState();
 }
 
-class _OddOneOutScreenState extends State<OddOneOutScreen> {
+class _OddOneOutScreenState extends State<OddOneOutScreen>
+    with AnswerCountdown {
   OddOneOutEngine? _engine;
   OddRound? _round;
   OddRound? _upcoming;
@@ -34,6 +36,7 @@ class _OddOneOutScreenState extends State<OddOneOutScreen> {
       _engine = OddOneOutEngine(dex);
       setState(() => _round = _engine!.next());
       _prepareNext();
+      startCountdown();
     });
   }
 
@@ -51,6 +54,7 @@ class _OddOneOutScreenState extends State<OddOneOutScreen> {
 
   void _pick(int index) {
     if (_picked != null) return;
+    stopCountdown();
     setState(() {
       _picked = index;
       if (index == _round!.oddIndex) _streak++;
@@ -63,9 +67,15 @@ class _OddOneOutScreenState extends State<OddOneOutScreen> {
       _picked = null;
     });
     _prepareNext();
+    startCountdown();
   }
 
+  /// Tempo esgotado: conta como resposta errada (índice -1).
+  @override
+  void onCountdownTimeout() => _pick(-1);
+
   void _finish() {
+    stopCountdown();
     Navigator.of(context).pushReplacement(
       MaterialPageRoute(
         builder: (_) => GameResultScreen(
@@ -122,9 +132,15 @@ class _OddOneOutScreenState extends State<OddOneOutScreen> {
                       ],
                     ),
                     const SizedBox(height: 8),
+                    countdownBar(),
+                    const SizedBox(height: 8),
                     Text(
                       answered
-                          ? (correct ? 'Acertou!' : 'Errou!')
+                          ? (correct
+                                ? 'Acertou!'
+                                : _picked == -1
+                                ? 'Tempo esgotado!'
+                                : 'Errou!')
                           : 'Toque no Pokémon que é diferente',
                       textAlign: TextAlign.center,
                       style: const TextStyle(

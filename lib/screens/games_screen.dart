@@ -6,6 +6,7 @@ import '../models/quiz.dart';
 import '../services/auth_service.dart';
 import '../services/score_service.dart';
 import '../widgets/user_avatar.dart';
+import 'fact_fake_screen.dart';
 import 'hangman_screen.dart';
 import 'odd_one_out_screen.dart';
 import 'stat_duel_screen.dart';
@@ -17,6 +18,7 @@ Widget buildGameScreen(GameId game) => switch (game) {
   GameId.hangman => const HangmanScreen(),
   GameId.oddOneOut => const OddOneOutScreen(),
   GameId.statDuel => const StatDuelScreen(),
+  GameId.factOrFake => const FactFakeScreen(),
   GameId.whosThatEndless => const WhosThatScreen(endlessLevel: QuizLevel.full),
 };
 

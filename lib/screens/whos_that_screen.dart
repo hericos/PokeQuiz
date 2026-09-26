@@ -4,6 +4,7 @@ import '../models/game.dart';
 import '../models/pokemon.dart';
 import '../models/quiz.dart';
 import '../services/quiz_engine.dart';
+import '../widgets/answer_countdown.dart';
 import '../widgets/confirm_exit.dart';
 import '../widgets/poke_background.dart';
 import '../widgets/pokemon_image.dart';
@@ -21,7 +22,7 @@ class WhosThatScreen extends StatefulWidget {
   State<WhosThatScreen> createState() => _WhosThatScreenState();
 }
 
-class _WhosThatScreenState extends State<WhosThatScreen> {
+class _WhosThatScreenState extends State<WhosThatScreen> with AnswerCountdown {
   static const perLevel = QuizEngine.questionsPerLevel;
   static const endlessLives = 3;
 
@@ -40,6 +41,7 @@ class _WhosThatScreenState extends State<WhosThatScreen> {
 
   /// Resultado da pergunta atual (null = ainda respondendo).
   bool? _lastWasCorrect;
+  bool _timedOut = false;
   Pokemon? _picked;
 
   QuizLevel? get _endless => widget.endlessLevel;
@@ -55,6 +57,7 @@ class _WhosThatScreenState extends State<WhosThatScreen> {
         ? [for (var i = 0; i < _lookahead; i++) _engine.nextQuestion(_endless!)]
         : _engine.buildGame();
     _answerTime.start();
+    startCountdown();
   }
 
   @override
@@ -79,13 +82,20 @@ class _WhosThatScreenState extends State<WhosThatScreen> {
     super.dispose();
   }
 
-  void _answer({Pokemon? option, String? typed}) {
+  @override
+  void onCountdownTimeout() => _answer(timedOut: true);
+
+  void _answer({Pokemon? option, String? typed, bool timedOut = false}) {
     if (_lastWasCorrect != null) return;
+    stopCountdown();
     _answerTime.stop();
-    final ok = option != null
-        ? option == _q.answer
-        : QuizEngine.isCorrectTypedAnswer(_q.answer, typed ?? '');
+    final ok =
+        !timedOut &&
+        (option != null
+            ? option == _q.answer
+            : QuizEngine.isCorrectTypedAnswer(_q.answer, typed ?? ''));
     setState(() {
+      _timedOut = timedOut;
       _picked = option;
       _lastWasCorrect = ok;
       _lastPoints = ok ? _level.pointsFor(_answerTime.elapsed) : 0;
@@ -106,6 +116,7 @@ class _WhosThatScreenState extends State<WhosThatScreen> {
         _questions.add(added);
         _index++;
         _lastWasCorrect = null;
+        _timedOut = false;
         _picked = null;
         _typed.clear();
       });
@@ -116,6 +127,7 @@ class _WhosThatScreenState extends State<WhosThatScreen> {
       _answerTime
         ..reset()
         ..start();
+      startCountdown();
       return;
     }
     if (_index == _questions.length - 1) {
@@ -126,6 +138,7 @@ class _WhosThatScreenState extends State<WhosThatScreen> {
     setState(() {
       _index++;
       _lastWasCorrect = null;
+      _timedOut = false;
       _picked = null;
       _typed.clear();
     });
@@ -133,9 +146,11 @@ class _WhosThatScreenState extends State<WhosThatScreen> {
       _precache(_index + perLevel);
       await _showLevelUp();
     }
+    if (!mounted) return;
     _answerTime
       ..reset()
       ..start();
+    startCountdown();
   }
 
   Future<void> _showLevelUp() => showDialog<void>(
@@ -159,6 +174,7 @@ class _WhosThatScreenState extends State<WhosThatScreen> {
   );
 
   void _finish() {
+    stopCountdown();
     if (_isEndless) {
       final level = _endless!;
       final answered = _index + (_lastWasCorrect != null ? 1 : 0);
@@ -268,7 +284,9 @@ class _WhosThatScreenState extends State<WhosThatScreen> {
                   _Pill('$_score pts', Icons.star),
                 ],
               ),
-              const SizedBox(height: 12),
+              const SizedBox(height: 8),
+              countdownBar(),
+              const SizedBox(height: 8),
               Card(
                 child: Padding(
                   padding: const EdgeInsets.symmetric(vertical: 16),
@@ -369,8 +387,16 @@ class _WhosThatScreenState extends State<WhosThatScreen> {
         padding: const EdgeInsets.all(16),
         child: Column(
           children: [
+            if (_timedOut)
+              Text(
+                'Tempo esgotado!',
+                style: Theme.of(context).textTheme.titleMedium
+                    ?.copyWith(color: color, fontWeight: FontWeight.bold),
+              ),
             Icon(
-              ok ? Icons.check_circle : Icons.cancel,
+              ok
+                  ? Icons.check_circle
+                  : (_timedOut ? Icons.timer_off : Icons.cancel),
               color: color,
               size: 40,
             ),
