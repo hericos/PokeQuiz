@@ -1,4 +1,3 @@
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 
 import '../models/game.dart';
@@ -55,7 +54,7 @@ class _WhosThatScreenState extends State<WhosThatScreen> {
   void _precache(int from) {
     for (final q in _questions.skip(from).take(perLevel)) {
       precacheImage(
-        CachedNetworkImageProvider(q.answer.imageUrl),
+        pokemonImageProvider(q.answer.imageUrl),
         context,
       ).catchError((_) {});
     }

@@ -1,6 +1,5 @@
 import 'dart:math';
 
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 
 import '../models/game.dart';
@@ -53,7 +52,7 @@ class _HangmanScreenState extends State<HangmanScreen> {
 
   void _precacheCurrent() {
     precacheImage(
-      CachedNetworkImageProvider(_round.pokemon.imageUrl),
+      pokemonImageProvider(_round.pokemon.imageUrl),
       context,
     ).catchError((_) {});
   }

@@ -1,11 +1,22 @@
 import 'dart:math';
 
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:cached_network_image_platform_interface/cached_network_image_platform_interface.dart'
+    show ImageRenderMethodForWeb;
 import 'package:flutter/material.dart';
 
 import '../models/pokemon.dart';
 
 enum PokemonImageMode { full, partial, shadow }
+
+/// Na web, baixa a imagem por HTTP em vez de usar o <img> do navegador
+/// (padrão do cached_network_image): com o <img>, imagens pré-carregadas
+/// ficavam pretas ao aparecer dentro de animações (AnimatedSwitcher).
+const _webRenderMethod = ImageRenderMethodForWeb.HttpGet;
+
+/// Provider das artes, para pré-carregar com as mesmas opções do widget.
+ImageProvider pokemonImageProvider(String url) =>
+    CachedNetworkImageProvider(url, imageRenderMethodForWeb: _webRenderMethod);
 
 /// Exibe a arte do Pokémon inteira, recortada (15% da área) ou como sombra.
 class PokemonImage extends StatelessWidget {
@@ -42,6 +53,7 @@ class PokemonImage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     Widget image = CachedNetworkImage(
+      imageRenderMethodForWeb: _webRenderMethod,
       imageUrl: shiny ? pokemon.shinyImageUrl : pokemon.imageUrl,
       width: size,
       height: size,

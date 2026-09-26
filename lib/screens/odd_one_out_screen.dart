@@ -1,4 +1,3 @@
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 
 import '../models/dex.dart';
@@ -44,9 +43,7 @@ class _OddOneOutScreenState extends State<OddOneOutScreen> {
     _upcoming = next;
     for (final p in next.pokemon) {
       precacheImage(
-        CachedNetworkImageProvider(
-          next.showsShiny ? p.shinyImageUrl : p.imageUrl,
-        ),
+        pokemonImageProvider(next.showsShiny ? p.shinyImageUrl : p.imageUrl),
         context,
       ).catchError((_) {});
     }
