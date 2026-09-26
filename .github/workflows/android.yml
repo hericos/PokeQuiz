@@ -6,9 +6,16 @@ on:
   pull_request:
   workflow_dispatch:
 
+permissions:
+  contents: write # publicar a Release com o APK
+
 jobs:
   build:
     runs-on: ubuntu-latest
+    env:
+      # Versão cresce a cada execução, para o Android aceitar a atualização.
+      BUILD_NAME: 1.0.${{ github.run_number }}
+      BUILD_NUMBER: ${{ github.run_number }}
     steps:
       - uses: actions/checkout@v4
 
@@ -27,9 +34,23 @@ jobs:
       - run: flutter test
 
       - name: Build APK
-        run: flutter build apk --release
+        run: >
+          flutter build apk --release
+          --build-name=$BUILD_NAME --build-number=$BUILD_NUMBER
 
-      - uses: actions/upload-artifact@v4
+      - name: Renomeia o APK
+        run: cp build/app/outputs/flutter-apk/app-release.apk pokequiz.apk
+
+      # Download direto do .apk (sem zip) na página de Releases.
+      - name: Publica a Release
+        if: github.event_name != 'pull_request'
+        uses: softprops/action-gh-release@v2
         with:
-          name: pokequiz-apk
-          path: build/app/outputs/flutter-apk/app-release.apk
+          tag_name: v${{ env.BUILD_NAME }}
+          name: PokeQuiz ${{ env.BUILD_NAME }}
+          target_commitish: ${{ github.sha }}
+          make_latest: true
+          body: |
+            Build ${{ env.BUILD_NUMBER }} do commit ${{ github.sha }} (branch ${{ github.ref_name }}).
+            Baixe o `pokequiz.apk` abaixo e instale por cima da versão anterior.
+          files: pokequiz.apk

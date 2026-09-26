@@ -121,9 +121,24 @@ As pontuações são enviadas pelo próprio app, então um usuário mal-intencio
 poderia forjar um recorde. Para um ranking à prova de trapaça, o próximo passo seria
 validar as partidas numa Cloud Function.
 
-## Build de release para Android
+## Instalar no celular (APK de teste)
 
-1. Gere uma chave: `keytool -genkey -v -keystore ~/pokequiz.jks -keyalg RSA -keysize 2048 -validity 10000 -alias pokequiz`
+A cada push, o workflow `.github/workflows/android.yml` roda análise e testes,
+gera o APK e publica uma **Release** com o arquivo `pokequiz.apk`. Link fixo para
+a versão mais recente:
+
+https://github.com/hericos/PokeQuiz/releases/latest/download/pokequiz.apk
+
+Os APKs de teste são assinados sempre com a mesma chave
+(`android/app/pokequiz-test.keystore`, senha `android`, versionada de propósito)
+e a versão sobe a cada build (`1.0.<número do build>`), então o Android aceita
+instalar **por cima** da versão anterior, sem desinstalar.
+
+## Build para a Play Store
+
+A chave de teste é pública e **não** deve ser usada na Play Store. Para publicar:
+
+1. Gere a sua chave: `keytool -genkey -v -keystore pokequiz.jks -keyalg RSA -keysize 2048 -validity 10000 -alias pokequiz`
 2. Crie `android/key.properties` (já está no `.gitignore`):
 
 ```properties
@@ -133,11 +148,9 @@ keyAlias=pokequiz
 storeFile=/caminho/para/pokequiz.jks
 ```
 
-3. `flutter build appbundle` (Play Store) ou `flutter build apk` (instalação direta).
+3. `flutter build appbundle` gera o `.aab` para enviar ao Play Console.
 
-Sem `key.properties`, o release é assinado com a chave de debug (bom para testes).
-O workflow `.github/workflows/android.yml` roda análise, testes e gera o APK
-como artefato a cada push.
+Com `key.properties` presente, o build de release usa essa chave; sem ele, usa a de teste.
 
 ## iOS (futuro)
 

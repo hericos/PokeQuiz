@@ -12,3 +12,8 @@ GeneratedPluginRegistrant.java
 key.properties
 **/*.keystore
 **/*.jks
+
+# Chave de TESTE com senha pública (android), versionada de propósito para que
+# todo APK de teste tenha a mesma assinatura e possa ser instalado por cima do
+# anterior. A chave de publicação na Play Store fica fora do repositório.
+!app/pokequiz-test.keystore

@@ -7,7 +7,7 @@ plugins {
 }
 
 // Assinatura de release: crie android/key.properties (veja README). Sem ele,
-// o build de release usa a chave de debug.
+// o build usa a chave fixa de teste (pokequiz-test.keystore).
 val keystoreProperties = Properties().apply {
     val file = rootProject.file("key.properties")
     if (file.exists()) file.inputStream().use { load(it) }
@@ -38,6 +38,16 @@ android {
     }
 
     signingConfigs {
+        // Chave fixa de teste (versionada, senha "android"): garante que todo
+        // APK de teste, local ou do CI, tenha a mesma assinatura e possa ser
+        // instalado por cima do anterior.
+        create("test") {
+            storeFile = file("pokequiz-test.keystore")
+            storePassword = "android"
+            keyAlias = "pokequiz-test"
+            keyPassword = "android"
+        }
+        // Chave de publicação (Play Store), só quando existe key.properties.
         if (keystoreProperties.isNotEmpty()) {
             create("release") {
                 keyAlias = keystoreProperties["keyAlias"] as String
@@ -49,11 +59,14 @@ android {
     }
 
     buildTypes {
+        debug {
+            signingConfig = signingConfigs.getByName("test")
+        }
         release {
             signingConfig = if (keystoreProperties.isNotEmpty()) {
                 signingConfigs.getByName("release")
             } else {
-                signingConfigs.getByName("debug")
+                signingConfigs.getByName("test")
             }
         }
     }
