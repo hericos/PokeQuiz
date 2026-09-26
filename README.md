@@ -6,7 +6,10 @@ Quiz de Pokémon feito em **Flutter** (Android agora, iOS no futuro).
 
 - **Conta com e-mail e senha no Firebase Auth**, com "Esqueci minha senha" e exclusão de conta.
 - **Perfil no Firestore** (vale em qualquer aparelho): foto (galeria ou câmera), nome, idade, cidade, país, Pokémon preferido (busca por nome ou número) e bio.
-- **Todos os 1025 Pokémon** da Pokédex Nacional (Kanto até Paldea).
+- **Todos os 1025 Pokémon** da Pokédex Nacional (Kanto até Paldea) e mais **220 formas
+  extras** em todos os jogos: Megas, Primal, regionais (Alola, Galar, Hisui, Paldea) e
+  alternativas (Rotom, Deoxys, Therian...), com tipos, habilidades e status próprios.
+  Formas só cosméticas (Totem, Gigantamax, bonés do Pikachu) ficam de fora.
 - Navegação em 3 abas: **Jogos**, **Ranking** e **Perfil**. Cada jogo é um card no catálogo.
 
 ### Jogos
@@ -47,8 +50,7 @@ misturadas ficam fora das perguntas de cor.
 Defesa, Ataque Especial, Defesa Especial, Velocidade ou Total). Toque no que tem o
 valor maior e vem outro par. São 3 vidas; a pontuação é o total de acertos.
 Evoluções (2º e 3º estágio) aparecem com mais frequência, e entram também ~200
-formas extras com status próprios: Megas, Primal, formas regionais (Alola, Galar,
-Hisui, Paldea) e alternativas como Deoxys Attack, Rotom Heat ou Kyurem Black. Os status base também vêm da PokeAPI (`assets/data/pokedex.json`).
+formas extras. Os status base também vêm da PokeAPI (`assets/data/pokedex.json`).
 
 ### Ranking
 
@@ -74,6 +76,7 @@ lib/
   firebase_options.dart       # gerado pelo `flutterfire configure`
   theme.dart                  # cores (fundo rosado) e tema
   data/pokemon_names.dart     # os 1025 nomes (gerado da PokeAPI)
+  data/pokemon_forms.dart     # as formas extras (id, espécie, nome)
   models/dex.dart             # tipos, evolução, habilidades... (assets/data/pokedex.json)
   models/                     # Pokemon/Region, GameId, QuizLevel, UserProfile
   services/

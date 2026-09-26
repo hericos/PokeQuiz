@@ -53,7 +53,14 @@ class PokemonForm {
 }
 
 class Dex {
-  Dex._(this.traits, this.moves, this.abilities, this.forms);
+  Dex._(this.traits, this.moves, this.abilities, this.forms, this._formTraits);
+
+  final Map<int, PokemonTraits> _formTraits;
+
+  /// Características de um Pokémon ou forma extra. Formas têm tipos,
+  /// habilidades, ataques e status próprios; o resto vem da espécie
+  /// (sem Mega nem cor shiny calculada).
+  PokemonTraits traitsOf(Pokemon p) => _formTraits[p.id] ?? of(p.dex);
 
   /// Índice = número da Pokédex - 1.
   final List<PokemonTraits> traits;
@@ -88,14 +95,33 @@ class Dex {
           stats: (p[8] as List).cast<int>(),
         ),
     ];
+    final rawForms = (data['forms'] as List?) ?? const [];
     final forms = [
-      for (final f in (data['forms'] as List?) ?? const [])
+      for (final f in rawForms)
         PokemonForm(
           Pokemon(f[0] as int, f[2] as String, speciesId: f[1] as int),
           (f[3] as List).cast<int>(),
         ),
     ];
-    return Dex._(traits, moves, abilities, forms);
+    final formTraits = <int, PokemonTraits>{
+      for (final f in rawForms)
+        if (f.length > 6)
+          f[0] as int: () {
+            final species = traits[(f[1] as int) - 1];
+            return PokemonTraits(
+              types: (f[4] as List).cast<String>(),
+              stage: species.stage,
+              evolutionMethod: species.evolutionMethod,
+              hasMega: false,
+              legend: species.legend,
+              shinyColor: null,
+              abilities: {for (final i in f[5] as List) abilities[i as int]},
+              moves: {for (final i in f[6] as List) moves[i as int]},
+              stats: (f[3] as List).cast<int>(),
+            );
+          }(),
+    };
+    return Dex._(traits, moves, abilities, forms, formTraits);
   }
 }
 

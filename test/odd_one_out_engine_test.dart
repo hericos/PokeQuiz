@@ -26,6 +26,33 @@ void main() {
     expect(t('Umbreon').shinyColor, 'black');
   });
 
+  test('formas extras têm tipos próprios e região da forma', () {
+    final raichu = Pokemon.byName('Alolan Raichu')!;
+    expect(raichu.isForm, isTrue);
+    expect(dex.traitsOf(raichu).types, ['electric', 'psychic']);
+    expect(dex.traitsOf(raichu).stage, 3);
+    expect(raichu.region, Region.alola);
+    expect(dex.traitsOf(Pokemon.byName('Mega Charizard X')!).types, [
+      'fire',
+      'dragon',
+    ]);
+    expect(Pokemon.byName('Hisuian Typhlosion')!.region, Region.hisui);
+    expect(Pokemon.byName('Zen Galarian Darmanitan')!.region, Region.galar);
+    expect(dex.traitsOf(Pokemon.byName('Wash Rotom')!).types, [
+      'electric',
+      'water',
+    ]);
+  });
+
+  test('formas aparecem nas rodadas', () {
+    final engine = OddOneOutEngine(dex, random: Random(5));
+    var forms = 0;
+    for (var n = 0; n < 300; n++) {
+      forms += engine.next().pokemon.where((p) => p.isForm).length;
+    }
+    expect(forms, greaterThan(50));
+  });
+
   test('toda rodada tem 4 Pokémon distintos e o diferente não compartilha o critério', () {
     final engine = OddOneOutEngine(dex, random: Random(7));
     for (final c in OddCriterion.values) {
@@ -56,11 +83,11 @@ void main() {
           if (i != r.oddIndex) r.pokemon[i],
       ];
       final shared = others
-          .map((p) => dex.of(p.id).types.toSet())
+          .map((p) => dex.traitsOf(p).types.toSet())
           .reduce((a, b) => a.intersection(b));
       expect(shared, isNotEmpty);
       expect(
-        dex.of(r.odd.id).types.toSet().intersection(shared),
+        dex.traitsOf(r.odd).types.toSet().intersection(shared),
         isNot(equals(shared)),
       );
     }

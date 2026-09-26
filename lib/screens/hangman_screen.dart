@@ -38,7 +38,7 @@ class _HangmanScreenState extends State<HangmanScreen> {
   HangmanRound _newRound() {
     Pokemon p;
     do {
-      p = Pokemon.all[_random.nextInt(Pokemon.all.length)];
+      p = Pokemon.everything[_random.nextInt(Pokemon.everything.length)];
     } while (_used.contains(p));
     _used.add(p);
     return HangmanRound(p);

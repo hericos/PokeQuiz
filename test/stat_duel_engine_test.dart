@@ -30,7 +30,7 @@ void main() {
       expect(megaX.pokemon.imageUrl, endsWith('/${megaX.pokemon.id}.png'));
       expect(PokeStat.total.of(megaX.stats), 634);
       expect(PokeStat.speed.of(form('Attack Deoxys').stats), 150);
-      expect(form('Alolan Raichu').pokemon.region.label, 'Kanto');
+      expect(form('Alolan Raichu').pokemon.region.label, 'Alola');
       expect(dex.forms.any((f) => f.pokemon.name.contains('Hisuian')), isTrue);
       // Sem formas puramente cosméticas.
       expect(dex.forms.any((f) => f.pokemon.name.contains('Totem')), isFalse);

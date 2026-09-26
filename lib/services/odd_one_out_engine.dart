@@ -62,8 +62,8 @@ class OddOneOutEngine {
 
   /// Rodada para um critério específico (null se não achou combinação).
   OddRound? build(OddCriterion c) {
-    PokemonTraits t(Pokemon p) => dex.of(p.id);
-    final all = Pokemon.all;
+    PokemonTraits t(Pokemon p) => dex.traitsOf(p);
+    final all = Pokemon.everything;
 
     switch (c) {
       case OddCriterion.type:
@@ -107,8 +107,8 @@ class OddOneOutEngine {
         final oddHasMega = _random.nextBool();
         return _make(
           c,
-          group: all.where((p) => t(p).hasMega != oddHasMega),
-          others: all.where((p) => t(p).hasMega == oddHasMega),
+          group: Pokemon.all.where((p) => t(p).hasMega != oddHasMega),
+          others: Pokemon.all.where((p) => t(p).hasMega == oddHasMega),
           label: (p) => t(p).hasMega ? 'Tem Mega' : 'Sem Mega',
           explanation: (odd) => oddHasMega
               ? '${odd.name} é o único com Mega Evolução.'

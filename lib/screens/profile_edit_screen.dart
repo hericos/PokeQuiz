@@ -214,11 +214,11 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
                         optionsBuilder: (value) {
                           final q = value.text.trim().toLowerCase();
                           if (q.isEmpty) return const Iterable<Pokemon>.empty();
-                          return Pokemon.all
+                          return Pokemon.everything
                               .where(
                                 (p) =>
                                     p.name.toLowerCase().contains(q) ||
-                                    p.id.toString() == q,
+                                    p.dex.toString() == q,
                               )
                               .take(20);
                         },

@@ -14,6 +14,24 @@ void main() {
     expect(Pokemon.all.map((p) => p.name).toSet(), hasLength(1025));
   });
 
+  test('formas extras entram nos jogos, com nomes únicos', () {
+    expect(Pokemon.forms.length, greaterThan(150));
+    expect(Pokemon.everything.length, 1025 + Pokemon.forms.length);
+    expect(
+      Pokemon.everything.map((p) => p.name).toSet(),
+      hasLength(Pokemon.everything.length),
+    );
+    final megaX = Pokemon.byName('Mega Charizard X')!;
+    expect(megaX.dexNumber, '#0006');
+    expect(QuizEngine.isCorrectTypedAnswer(megaX, 'mega charizard x'), isTrue);
+    final game = QuizEngine(random: Random(2)).buildGame();
+    final many = [
+      for (var i = 0; i < 20; i++) ...QuizEngine(random: Random(i)).buildGame(),
+    ];
+    expect(game, hasLength(40));
+    expect(many.where((q) => q.answer.isForm), isNotEmpty);
+  });
+
   test('regiões cobrem todos os números', () {
     expect(Pokemon.byName('Mew')!.region, Region.kanto);
     expect(Pokemon.byName('Chikorita')!.region, Region.johto);

@@ -7,7 +7,7 @@ import '../models/quiz.dart';
 class QuizEngine {
   QuizEngine({Random? random, List<Pokemon>? pool})
     : _random = random ?? Random(),
-      _pool = pool ?? Pokemon.all;
+      _pool = pool ?? Pokemon.everything;
 
   static const questionsPerLevel = 10;
 
