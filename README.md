@@ -161,7 +161,7 @@ O mesmo código roda no navegador: https://pokequiz-575ea.web.app
 - Teste local: `flutter run -d chrome`.
 - Em telas largas o app fica numa coluna de 600px centralizada.
 - Deploy: o job `web` do workflow publica no Firebase Hosting a cada push, desde que exista
-  o secret `FIREBASE_SERVICE_ACCOUNT` no GitHub. Manual: `firebase deploy --only hosting`.
+  o secret `FIREBASE_SERVICE_ACCOUNT_POKEQUIZ_575EA` (ou `FIREBASE_SERVICE_ACCOUNT`) no GitHub. Manual: `firebase deploy --only hosting`.
 
 Para criar o secret, o jeito mais simples é `firebase init hosting:github` (cria a conta de
 serviço e o secret sozinho). Manualmente: Google Cloud Console → IAM → Contas de serviço →
