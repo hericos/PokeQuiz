@@ -58,8 +58,9 @@ jobs:
   web:
     runs-on: ubuntu-latest
     env:
-      # Deploy só roda depois de cadastrar o secret FIREBASE_SERVICE_ACCOUNT.
-      HAS_FIREBASE_SA: ${{ secrets.FIREBASE_SERVICE_ACCOUNT != '' }}
+      # Conta de serviço do Firebase. O `firebase init hosting:github` cria o
+      # secret FIREBASE_SERVICE_ACCOUNT_POKEQUIZ_575EA; também aceita o nome curto.
+      FIREBASE_SA: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_POKEQUIZ_575EA || secrets.FIREBASE_SERVICE_ACCOUNT }}
     steps:
       - uses: actions/checkout@v4
 
@@ -76,10 +77,10 @@ jobs:
 
       # Publica em https://pokequiz-575ea.web.app a cada push (igual ao APK).
       - name: Deploy no Firebase Hosting
-        if: github.event_name != 'pull_request' && env.HAS_FIREBASE_SA == 'true'
+        if: github.event_name != 'pull_request' && env.FIREBASE_SA != ''
         uses: FirebaseExtended/action-hosting-deploy@v0
         with:
           repoToken: ${{ secrets.GITHUB_TOKEN }}
-          firebaseServiceAccount: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+          firebaseServiceAccount: ${{ env.FIREBASE_SA }}
           projectId: pokequiz-575ea
           channelId: live
