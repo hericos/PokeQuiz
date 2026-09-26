@@ -16,6 +16,7 @@ class PokemonImage extends StatelessWidget {
     this.cropX = 0,
     this.cropY = 0,
     this.size = 260,
+    this.shiny = false,
   });
 
   final Pokemon pokemon;
@@ -23,6 +24,9 @@ class PokemonImage extends StatelessWidget {
   final double cropX;
   final double cropY;
   final double size;
+
+  /// Usa a arte da forma shiny (brilhante).
+  final bool shiny;
 
   /// Lado da janela de recorte: sqrt(0.15) ≈ 0.387 → 15% da área.
   static final cropFactor = sqrt(0.15);
@@ -38,7 +42,7 @@ class PokemonImage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     Widget image = CachedNetworkImage(
-      imageUrl: pokemon.imageUrl,
+      imageUrl: shiny ? pokemon.shinyImageUrl : pokemon.imageUrl,
       width: size,
       height: size,
       fit: BoxFit.contain,

@@ -12,6 +12,11 @@ enum GameId {
     'Forca',
     'Descubra o nome do Pokémon letra por letra antes que o Banette fique completo na forca.',
     Icons.abc,
+  ),
+  oddOneOut(
+    'Qual é o diferente?',
+    'Quatro Pokémon, um critério: toque no que não combina com os outros. Quantos acertos seguidos você consegue?',
+    Icons.grid_view_rounded,
   );
 
   const GameId(this.title, this.description, this.icon);

@@ -28,6 +28,16 @@ erro uma parte do **Banette** aparece na forca. Cada Pokémon descoberto vale
 10 + 5 por chance sobrando, e a partida segue até o Banette ficar completo.
 A dica mostra a região do Pokémon.
 
+**Qual é o diferente?** — quatro Pokémon num quadrado 2x2 e um critério sorteado
+(tipo, método de evolução, primeira letra, forma Mega, região, estágio da evolução,
+cor da forma shiny, habilidade, ataque ou lendário/mítico). Três compartilham algo
+e um não: toque nele. A pontuação é a sequência de acertos até o primeiro erro.
+Depois de cada resposta aparece o valor de cada Pokémon no critério.
+
+Os dados vêm de `assets/data/pokedex.json`, gerado a partir dos CSVs da PokeAPI.
+A cor shiny foi calculada a partir da arte oficial shiny; Pokémon com cores muito
+misturadas ficam fora das perguntas de cor.
+
 ### Ranking
 
 **Global**, no Firestore. Ao fim de cada partida aparece sua posição. Há ranking por
@@ -52,6 +62,7 @@ lib/
   firebase_options.dart       # gerado pelo `flutterfire configure`
   theme.dart                  # cores (fundo rosado) e tema
   data/pokemon_names.dart     # os 1025 nomes (gerado da PokeAPI)
+  models/dex.dart             # tipos, evolução, habilidades... (assets/data/pokedex.json)
   models/                     # Pokemon/Region, GameId, QuizLevel, UserProfile
   services/
     auth_service.dart         # Firebase Auth (e-mail/senha) + perfil no Firestore
@@ -59,6 +70,7 @@ lib/
     photo_encoder.dart        # recorta/comprime a foto do perfil
     quiz_engine.dart          # sorteio do "Quem é esse Pokémon?" e normalização
     hangman_engine.dart       # regras da Forca
+    odd_one_out_engine.dart   # rodadas do "Qual é o diferente?"
   screens/                    # login, abas, jogos, resultado, ranking, perfil
   widgets/                    # fundo de pokébolas, PokemonImage, forca do Banette
 test/                         # testes unitários

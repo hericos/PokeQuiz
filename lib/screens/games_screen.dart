@@ -7,12 +7,14 @@ import '../services/auth_service.dart';
 import '../services/score_service.dart';
 import '../widgets/user_avatar.dart';
 import 'hangman_screen.dart';
+import 'odd_one_out_screen.dart';
 import 'whos_that_screen.dart';
 
 /// Tela de cada jogo do catálogo.
 Widget buildGameScreen(GameId game) => switch (game) {
   GameId.whosThat => const WhosThatScreen(),
   GameId.hangman => const HangmanScreen(),
+  GameId.oddOneOut => const OddOneOutScreen(),
 };
 
 class GamesScreen extends StatefulWidget {
