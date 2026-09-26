@@ -12,12 +12,17 @@ permissions:
 jobs:
   build:
     runs-on: ubuntu-latest
-    env:
-      # Versão cresce a cada execução, para o Android aceitar a atualização.
-      BUILD_NAME: 1.0.${{ github.run_number }}
-      BUILD_NUMBER: ${{ github.run_number }}
     steps:
       - uses: actions/checkout@v4
+
+      # Versão cresce a cada execução, para o Android aceitar a atualização.
+      # +100 porque o workflow foi renomeado (android.yml -> build.yml) e a
+      # contagem do GitHub recomeçou; o antigo chegou ao build 6.
+      - name: Define a versão
+        run: |
+          n=$((GITHUB_RUN_NUMBER + 100))
+          echo "BUILD_NUMBER=$n" >> "$GITHUB_ENV"
+          echo "BUILD_NAME=1.0.$n" >> "$GITHUB_ENV"
 
       - uses: actions/setup-java@v4
         with:
@@ -73,7 +78,7 @@ jobs:
 
       - name: Build Web
         # Embute o CanvasKit no site (não depende do CDN gstatic.com).
-        run: flutter build web --release --no-web-resources-cdn --build-name=1.0.${{ github.run_number }}
+        run: flutter build web --release --no-web-resources-cdn --build-name=1.0.$((GITHUB_RUN_NUMBER + 100))
 
       # Publica em https://pokequiz-575ea.web.app a cada push (igual ao APK).
       - name: Deploy no Firebase Hosting
