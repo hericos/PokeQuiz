@@ -9,7 +9,7 @@ import '../widgets/pokemon_image.dart';
 import 'game_result_screen.dart';
 
 /// "Quem tem mais?": dois Pokémon lado a lado; toque no que tem o maior
-/// valor do status sorteado. Pontuação = acertos seguidos.
+/// valor do status sorteado. 3 vidas; pontuação = total de acertos.
 class StatDuelScreen extends StatefulWidget {
   const StatDuelScreen({super.key});
 
@@ -21,7 +21,10 @@ class _StatDuelScreenState extends State<StatDuelScreen> {
   StatDuelEngine? _engine;
   StatDuelRound? _round;
   StatDuelRound? _upcoming;
-  int _streak = 0;
+  static const maxLives = 3;
+
+  int _hits = 0;
+  int _lives = maxLives;
 
   /// Lado tocado na rodada atual (null = ainda escolhendo).
   int? _picked;
@@ -53,7 +56,11 @@ class _StatDuelScreenState extends State<StatDuelScreen> {
     if (_picked != null) return;
     setState(() {
       _picked = side;
-      if (side == _round!.winner) _streak++;
+      if (side == _round!.winner) {
+        _hits++;
+      } else {
+        _lives--;
+      }
     });
   }
 
@@ -71,8 +78,8 @@ class _StatDuelScreenState extends State<StatDuelScreen> {
       MaterialPageRoute(
         builder: (_) => GameResultScreen(
           game: GameId.statDuel,
-          score: _streak,
-          headline: '$_streak acerto(s) seguido(s)',
+          score: _hits,
+          headline: '$_hits acerto(s)',
           details: [
             '${r.stat.label}: ${r.left.name} ${r.leftValue} × '
                 '${r.rightValue} ${r.right.name}',
@@ -88,9 +95,10 @@ class _StatDuelScreenState extends State<StatDuelScreen> {
     final round = _round;
     final answered = _picked != null;
     final correct = answered && _picked == round!.winner;
+    final gameOver = _lives == 0;
 
     return ConfirmExit(
-      enabled: !(answered && !correct),
+      enabled: !gameOver,
       child: PokeScaffold(
         appBar: AppBar(title: const Text('Quem tem mais?')),
         body: round == null
@@ -101,21 +109,37 @@ class _StatDuelScreenState extends State<StatDuelScreen> {
                 child: ListView(
                   padding: const EdgeInsets.all(16),
                   children: [
-                    Align(
-                      alignment: Alignment.centerLeft,
-                      child: Chip(
-                        avatar: const Icon(
-                          Icons.local_fire_department,
-                          color: Colors.deepOrange,
-                          size: 18,
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Chip(
+                          key: const ValueKey('lives'),
+                          label: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              for (var i = 0; i < maxLives; i++)
+                                Icon(
+                                  i < _lives
+                                      ? Icons.favorite
+                                      : Icons.favorite_border,
+                                  color: Colors.red,
+                                  size: 20,
+                                ),
+                            ],
+                          ),
+                          backgroundColor: Colors.white,
+                          side: BorderSide.none,
                         ),
-                        label: Text(
-                          'Sequência: $_streak',
-                          style: const TextStyle(fontWeight: FontWeight.bold),
+                        Chip(
+                          avatar: const Icon(Icons.check_circle, size: 18),
+                          label: Text(
+                            '$_hits acertos',
+                            style: const TextStyle(fontWeight: FontWeight.bold),
+                          ),
+                          backgroundColor: Colors.white,
+                          side: BorderSide.none,
                         ),
-                        backgroundColor: Colors.white,
-                        side: BorderSide.none,
-                      ),
+                      ],
                     ),
                     const SizedBox(height: 8),
                     Text(
@@ -170,15 +194,15 @@ class _StatDuelScreenState extends State<StatDuelScreen> {
                     ),
                     if (answered) ...[
                       const SizedBox(height: 16),
-                      if (correct)
+                      if (gameOver)
                         FilledButton(
-                          onPressed: _next,
-                          child: const Text('Próximo'),
+                          onPressed: _finish,
+                          child: const Text('Fim de jogo — ver resultado'),
                         )
                       else
                         FilledButton(
-                          onPressed: _finish,
-                          child: const Text('Ver resultado'),
+                          onPressed: _next,
+                          child: const Text('Próximo'),
                         ),
                     ],
                   ],

@@ -20,7 +20,7 @@ enum GameId {
   ),
   statDuel(
     'Quem tem mais?',
-    'Dois Pokémon lado a lado: toque no que tem mais HP, Ataque, Velocidade... Quantos acertos seguidos você consegue?',
+    'Dois Pokémon lado a lado, incluindo Megas e formas regionais: toque no que tem mais HP, Ataque, Velocidade... 3 vidas.',
     Icons.bar_chart_rounded,
   ),
 

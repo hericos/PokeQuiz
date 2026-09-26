@@ -2,6 +2,8 @@ import 'dart:convert';
 
 import 'package:flutter/services.dart' show rootBundle;
 
+import 'pokemon.dart';
+
 /// Características de cada Pokémon usadas no "Qual é o diferente?".
 /// Dados gerados a partir da PokeAPI (assets/data/pokedex.json).
 class PokemonTraits {
@@ -42,14 +44,24 @@ class PokemonTraits {
   bool get isLegendaryOrMythical => legend > 0;
 }
 
+/// Forma extra (Mega, regional, Therian...) com status próprios.
+class PokemonForm {
+  const PokemonForm(this.pokemon, this.stats);
+
+  final Pokemon pokemon;
+  final List<int> stats;
+}
+
 class Dex {
-  Dex._(this.traits, this.moves, this.abilities);
+  Dex._(this.traits, this.moves, this.abilities, this.forms);
 
   /// Índice = número da Pokédex - 1.
   final List<PokemonTraits> traits;
   final List<String> moves;
   final List<String> abilities;
+  final List<PokemonForm> forms;
 
+  /// Características da espécie (formas extras usam as da espécie).
   PokemonTraits of(int id) => traits[id - 1];
 
   static Future<Dex>? _loading;
@@ -76,7 +88,14 @@ class Dex {
           stats: (p[8] as List).cast<int>(),
         ),
     ];
-    return Dex._(traits, moves, abilities);
+    final forms = [
+      for (final f in (data['forms'] as List?) ?? const [])
+        PokemonForm(
+          Pokemon(f[0] as int, f[2] as String, speciesId: f[1] as int),
+          (f[3] as List).cast<int>(),
+        ),
+    ];
+    return Dex._(traits, moves, abilities, forms);
   }
 }
 

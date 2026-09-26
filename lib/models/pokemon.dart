@@ -23,10 +23,17 @@ enum Region {
 }
 
 class Pokemon {
+  /// Número usado nas imagens da PokeAPI: o da Pokédex, ou 10001+ para
+  /// formas extras (Mega, regionais...).
   final int id;
   final String name;
 
-  const Pokemon(this.id, this.name);
+  /// Espécie da forma extra (ex.: Mega Charizard X → 6). null = forma base.
+  final int? speciesId;
+
+  const Pokemon(this.id, this.name, {this.speciesId});
+
+  int get dex => speciesId ?? id;
 
   /// Arte oficial hospedada pelo projeto PokeAPI/sprites.
   String get imageUrl =>
@@ -35,9 +42,9 @@ class Pokemon {
   String get shinyImageUrl =>
       'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/shiny/$id.png';
 
-  String get dexNumber => '#${id.toString().padLeft(4, '0')}';
+  String get dexNumber => '#${dex.toString().padLeft(4, '0')}';
 
-  Region get region => Region.of(id);
+  Region get region => Region.of(dex);
 
   /// Todos os Pokémon de todas as regiões.
   static final List<Pokemon> all = List.unmodifiable([

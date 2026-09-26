@@ -45,8 +45,10 @@ misturadas ficam fora das perguntas de cor.
 
 **Quem tem mais?** — dois Pokémon lado a lado e um status sorteado (HP, Ataque,
 Defesa, Ataque Especial, Defesa Especial, Velocidade ou Total). Toque no que tem o
-valor maior; acertou, vem outro par. A pontuação é a sequência de acertos até o
-primeiro erro. Os status base também vêm da PokeAPI (`assets/data/pokedex.json`).
+valor maior e vem outro par. São 3 vidas; a pontuação é o total de acertos.
+Evoluções (2º e 3º estágio) aparecem com mais frequência, e entram também ~200
+formas extras com status próprios: Megas, Primal, formas regionais (Alola, Galar,
+Hisui, Paldea) e alternativas como Deoxys Attack, Rotom Heat ou Kyurem Black. Os status base também vêm da PokeAPI (`assets/data/pokedex.json`).
 
 ### Ranking
 
