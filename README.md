@@ -81,7 +81,8 @@ Sem isso o app abre numa tela "Firebase não configurado".
 3. **Firestore Database → Criar banco de dados** → modo de **produção** → região `southamerica-east1` (São Paulo).
 4. Publique as regras de segurança: copie o conteúdo de [`firestore.rules`](firestore.rules) em
    **Firestore → Regras → Publicar** (ou `firebase deploy --only firestore:rules`).
-5. No seu PC, gere a configuração do app:
+5. O projeto atual (`pokequiz-575ea`) já está configurado para Android em
+   `lib/firebase_options.dart`. Para trocar de projeto ou adicionar o iOS, gere a configuração:
 
 ```bash
 npm install -g firebase-tools        # ou o instalador standalone do Firebase CLI

@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "442550622701",
+    "project_id": "pokequiz-575ea",
+    "storage_bucket": "pokequiz-575ea.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:442550622701:android:bd8dcd4389bdb84e2f2fe4",
+        "android_client_info": {
+          "package_name": "com.hericos.pokequiz"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCjEu3LGxSLrLdMdf2EKwaPNYsqxRwg92c"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
